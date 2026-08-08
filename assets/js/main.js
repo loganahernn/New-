@@ -87,6 +87,74 @@
   }
 
   /* ------------------------------------------------------------------------
+     Theme toggle
+     ------------------------------------------------------------------------
+     The stylesheet does the actual work via light-dark(); all this does is
+     set `data-theme` and `color-scheme` on <html> and remember the choice.
+     Without JavaScript the site simply follows the operating system, which
+     is the correct default anyway.
+
+     The initial value is applied by a small inline script in each page's
+     <head> so the theme is right on first paint. This only wires the button.
+     ---------------------------------------------------------------------- */
+  function initTheme() {
+    var toggle = document.querySelector("[data-theme-toggle]");
+    if (!toggle) return;
+
+    var root = document.documentElement;
+
+    function resolved() {
+      var stored = root.getAttribute("data-theme");
+      if (stored === "light" || stored === "dark") return stored;
+      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+
+    function label() {
+      var next = resolved() === "dark" ? "light" : "dark";
+      toggle.setAttribute("aria-label", "Switch to " + next + " theme");
+      toggle.setAttribute("title", "Switch to " + next + " theme");
+    }
+
+    toggle.addEventListener("click", function () {
+      var next = resolved() === "dark" ? "light" : "dark";
+      root.setAttribute("data-theme", next);
+      root.style.colorScheme = next;
+      try {
+        localStorage.setItem("theme", next);
+      } catch (error) {
+        // Private browsing or blocked storage — the choice just will not persist.
+      }
+      label();
+    });
+
+    label();
+  }
+
+  /* ------------------------------------------------------------------------
+     Printing
+     ------------------------------------------------------------------------
+     A closed <details> prints as a heading with no answer, which makes a
+     printed FAQ useless. Open them all before printing, then restore.
+     ---------------------------------------------------------------------- */
+  function initPrint() {
+    var reopened = [];
+
+    window.addEventListener("beforeprint", function () {
+      reopened = [];
+      var items = document.querySelectorAll(".faq details:not([open])");
+      for (var i = 0; i < items.length; i++) {
+        items[i].open = true;
+        reopened.push(items[i]);
+      }
+    });
+
+    window.addEventListener("afterprint", function () {
+      for (var i = 0; i < reopened.length; i++) reopened[i].open = false;
+      reopened = [];
+    });
+  }
+
+  /* ------------------------------------------------------------------------
      Footer copyright year
      ---------------------------------------------------------------------- */
   function initYear() {
@@ -277,7 +345,9 @@
      ---------------------------------------------------------------------- */
   function init() {
     initNav();
+    initTheme();
     initStickyHeader();
+    initPrint();
     initYear();
     initForm();
   }

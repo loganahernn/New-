@@ -121,12 +121,26 @@ Because enquiries may contain health information, check your provider stores
 submissions in the UK/EEA or has an adequate transfer route, and cover it in the
 privacy notice.
 
-## 11. Favicon and logo
+## 11. Regulatory wording — check before you edit it
+
+Two claims on the site were checked against current guidance rather than written
+from memory. If you reword them, keep them accurate:
+
+- **Direct access** appears in `about.html`, `faqs.html` and twice in
+  `treatments.html`. A CDT may treat directly only where the patient has no
+  natural teeth and no implants, for full dentures; anyone dentate or with
+  implants needs a dentist's *prescription*, with repairs and shade-taking as
+  the exceptions. Getting this wrong on a live site is a regulatory problem,
+  not just an editorial one.
+- **Record retention** in `privacy.html` — state your own policy, do not
+  publish the range the template quotes.
+
+## 12. Favicon and logo
 
 The tooth mark is an inline SVG defined per page (in the `<link rel="icon">` data
 URI and in the header/footer markup). Swap it for real branding if you have it.
 
-## 12. Photography
+## 13. Photography
 
 There is no photography anywhere — the hero is an abstract SVG. Real photos of
 the practice, the laboratory and the team would lift the site more than any other
@@ -143,4 +157,5 @@ single change. Add them with explicit `width`/`height` attributes and
 - [ ] Test the contact form end to end and confirm the enquiry arrives
 - [ ] Check every page at 320px wide and at 200% zoom
 - [ ] Tab through each page — focus must stay visible and never get trapped
+- [ ] Check both light and dark themes — the toggle is in the header
 - [ ] Run Lighthouse; confirm the accessibility score and fix anything flagged
