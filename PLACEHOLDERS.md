@@ -16,14 +16,10 @@ Now real across the whole site:
 | Detail | Value | Where it appears |
 | --- | --- | --- |
 | Freephone | `0800 052 3126` | Call bar, header, every call band, footer, contact page |
-| Harpenden | `01582 462800` | Footer, contact page |
+| Harpenden | `01582 462880` | Footer, contact page |
 | St Albans | `01727 856967` | Footer, contact page |
 | Email | `dentureclinic@btinternet.com` | Footer, contact page, form fallback |
 | Address | 397 Luton Road, Harpenden AL5 3NF | Footer, contact page, JSON-LD |
-
-**Check the Harpenden number.** It is set to `01582 462800`. The button on the
-existing site reads `01582 462880` — the last two digits differ. One of the two
-is wrong and it needs confirming before launch.
 
 **Why the freephone leads.** The call bar and header appear on every page, and
 there are two branches, so a single branch number in a site-wide button would be
