@@ -215,7 +215,9 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
     gap: var(--sp-7);
-    align-items: center;
+    /* Top-aligned, not centred: when one column is much taller than the other,
+       centring strands the short one in the middle with a void above it. */
+    align-items: start;
   }
 
   .prose {
