@@ -33,9 +33,6 @@ and text on `.call-bar-link` and `.header-phone` in each page.
 
 Still missing:
 
-- **St Albans address** — only Harpenden is on the site. If St Albans is a
-  separate premises rather than a phone line, it needs its own address block,
-  its own hours, and probably its own JSON-LD entry.
 - **Opening hours** — `contact.html` and the JSON-LD in `index.html` both still
   carry invented hours. This is the most visible remaining placeholder.
 - **Getting here** — parking, nearest bus stop, step-free access.
@@ -44,13 +41,15 @@ Still missing:
 grep -rn "Placeholder\|TODO\|£000\|000000" *.html
 ```
 
-## 2. Prices — **must**
+## 2. Prices — settled
 
-`treatments.html` shows `£000` / `£00` throughout, with an amber warning box at
-the top of the page.
+Every treatment now shows **POA**, by choice rather than as a placeholder. The
+amber warning box is gone, replaced by a short panel at the top of
+`treatments.html` explaining what POA means — the term is jargon to most
+visitors, and this audience in particular should not have to guess.
 
-Replace every figure with your real fees, then **delete the `<div class="notice">`
-block** (search for `REMOVE THIS NOTICE BEFORE PUBLISHING`).
+If you ever want to publish figures, replace the `POA` values in the
+`.treatment-meta` blocks and delete that explanation panel.
 
 ## 3. Testimonials — **must**
 
@@ -97,10 +96,11 @@ Two answers in `faqs.html` are stubs:
 - **"Do you take NHS patients?"** — one of the first things patients look for.
 - **"Is the practice accessible?"**
 
-## 8. Statistics on the home page
+## 8. Statistics on the home page — settled
 
-`index.html` shows `00` years and `0,000` dentures fitted. Use figures you can
-evidence, or delete the `<dl class="stat-grid">` block.
+The home page states **30+ years in practice** and **1,000+ dentures fitted**.
+Both are claims you are making publicly, so keep them defensible — if either
+figure drifts out of date, update it.
 
 ## 9. Domain and metadata
 

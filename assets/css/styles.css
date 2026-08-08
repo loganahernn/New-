@@ -1079,6 +1079,10 @@
     accent-color: var(--fuchsia-text);
   }
 
+  /* Sits in the full-width container so it lines up with the treatment rows
+     below, but keeps a readable measure. */
+  .poa-note { max-inline-size: 68ch; }
+
   /* --- Page header ------------------------------------------------------- */
   .page-header {
     padding-block: var(--sp-7);
