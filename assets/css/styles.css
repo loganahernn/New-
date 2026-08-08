@@ -8,8 +8,8 @@
    - Every button, link and form control is at least 56px tall — well above
      the 24px WCAG 2.2 minimum, because small targets are the single biggest
      obstacle for anyone with less steady hands or poorer close vision.
-   - Black on white throughout (21:1), with light purple reserved for
-     buttons and highlights. Purple is never the only signal for anything.
+   - Black on white throughout (21:1), with fuchsia (#FF00FF) reserved for
+     buttons and accents. Colour is never the only signal for anything.
    - Links in body copy stay underlined, so they are not identified by
      colour alone.
    - No dark mode and no theme switch: one high-contrast look, one fewer
@@ -34,12 +34,18 @@
   --ink-soft: #33313a;     /* secondary text — 12.4:1, still well past AA */
   --ink-faint: #55525e;    /* captions only — 7.6:1 */
 
-  --purple: #c9a9f0;       /* the button fill: light purple, black text on it */
-  --purple-hover: #b78fe8;
-  --purple-deep: #5b2e96;  /* links, focus rings, icons — 9.2:1 on white */
-  --purple-tint: #f4eefc;  /* soft panel backgrounds */
-  --purple-tint-2: #ebdefa;
-  --purple-line: #d9c4f4;
+  /* Fuchsia #FF00FF exactly as specified, used for button and accent fills.
+     Text on it is BLACK, not white: white on #FF00FF is only 3.14:1 and fails
+     AA, while black is 6.70:1 and passes. The same hex is too light to be
+     readable as text on white (3.14:1), so link text uses a darker shade of
+     the identical hue at 7.46:1. */
+  --fuchsia: #ff00ff;
+  --fuchsia-hover: #e600e6;
+  --fuchsia-text: #990099;   /* links, focus rings, icons — 7.46:1 on white */
+  --fuchsia-tint: #fff0ff;   /* soft panel backgrounds — 19.2:1 with black */
+  --fuchsia-tint-2: #fbd9fb;
+  --fuchsia-line: #f4a8f4;
+  --ink-edge: #1c1b33;       /* the dark outline that defines a filled button */
 
   --line: #d9d7de;
   --line-soft: #eceaf0;
@@ -128,7 +134,7 @@
     color: var(--ink);
     background: var(--white);
     -webkit-font-smoothing: antialiased;
-    accent-color: var(--purple-deep);
+    accent-color: var(--fuchsia-text);
   }
 
   h1, h2, h3, h4 {
@@ -149,7 +155,7 @@
 
   /* Underlined by default: colour is never the only cue that this is a link */
   a {
-    color: var(--purple-deep);
+    color: var(--fuchsia-text);
     text-decoration: underline;
     text-decoration-thickness: 2px;
     text-underline-offset: 0.2em;
@@ -157,16 +163,16 @@
     &:hover { text-decoration-thickness: 3px; }
   }
 
-  /* A thick, high-contrast focus ring — visible against white and purple */
+  /* A thick, high-contrast focus ring — visible against white and fuchsia */
   :focus-visible {
-    outline: 4px solid var(--purple-deep);
+    outline: 4px solid var(--fuchsia-text);
     outline-offset: 3px;
     border-radius: var(--radius-sm);
   }
 
   hr { border: 0; border-block-start: 2px solid var(--line-soft); margin-block: var(--sp-7); }
 
-  ::selection { background: var(--purple-tint-2); color: var(--ink); }
+  ::selection { background: var(--fuchsia-tint-2); color: var(--ink); }
 }
 
 /* --------------------------------------------------------------------------
@@ -186,7 +192,7 @@
     padding-block: var(--sp-8);
 
     &.section--tight { padding-block: var(--sp-7); }
-    &.section--alt { background: var(--purple-tint); }
+    &.section--alt { background: var(--fuchsia-tint); }
   }
 
   .section-head {
@@ -240,7 +246,7 @@
     margin-block-end: var(--sp-3);
     font-size: var(--step-0);
     font-weight: 700;
-    color: var(--purple-deep);
+    color: var(--fuchsia-text);
   }
 
   .lede {
@@ -259,7 +265,7 @@
     padding: var(--sp-4) var(--sp-5);
     font-weight: 700;
     color: var(--ink);
-    background: var(--purple);
+    background: var(--fuchsia);
     text-decoration: none;
     border-end-start-radius: var(--radius);
     border-end-end-radius: var(--radius);
@@ -303,7 +309,7 @@
     flex: 0 0 auto;
     inline-size: 52px;
     block-size: 52px;
-    color: var(--purple-deep);
+    color: var(--fuchsia-text);
   }
 
   .brand-text { display: flex; flex-direction: column; line-height: 1.2; }
@@ -355,11 +361,11 @@
     color: var(--ink);
     text-decoration: none;
     white-space: nowrap;
-    border: 3px solid var(--purple);
+    border: 3px solid var(--fuchsia);
     border-radius: var(--radius-pill);
 
-    & svg { inline-size: 24px; block-size: 24px; color: var(--purple-deep); }
-    &:hover { background: var(--purple-tint); text-decoration: none; }
+    & svg { inline-size: 24px; block-size: 24px; color: var(--fuchsia-text); }
+    &:hover { background: var(--fuchsia-tint); text-decoration: none; }
 
     @media (width <= 1240px) { display: none; }
   }
@@ -373,8 +379,8 @@
     font-size: 1.15rem;
     font-weight: 700;
     color: var(--ink);
-    background: var(--purple-tint);
-    border: 3px solid var(--purple);
+    background: var(--fuchsia-tint);
+    border: 3px solid var(--fuchsia);
     border-radius: var(--radius-pill);
     cursor: pointer;
 
@@ -414,12 +420,12 @@
       white-space: nowrap;
       border-radius: var(--radius-pill);
 
-      &:hover { background: var(--purple-tint); text-decoration: none; }
+      &:hover { background: var(--fuchsia-tint); text-decoration: none; }
 
       /* Current page marked by weight and a bar, not colour alone */
       &[aria-current="page"] {
         font-weight: 700;
-        box-shadow: inset 0 -4px 0 var(--purple);
+        box-shadow: inset 0 -4px 0 var(--fuchsia);
       }
     }
   }
@@ -449,7 +455,7 @@
         min-block-size: 64px;
         border-radius: 0;
 
-        &[aria-current="page"] { box-shadow: inset 5px 0 0 var(--purple); }
+        &[aria-current="page"] { box-shadow: inset 5px 0 0 var(--fuchsia); }
       }
 
       & .nav-cta { display: inline-flex; margin-block-start: var(--sp-5); }
@@ -478,19 +484,19 @@
     &:hover { text-decoration: none; }
     & svg { inline-size: 24px; block-size: 24px; }
 
-    /* Light purple fill, black text — 10.4:1 */
+    /* Fuchsia fill, black text — 6.70:1, with a dark outline for definition */
     &.btn-primary {
-      background: var(--purple);
-      border-color: var(--purple);
+      background: var(--fuchsia);
+      border-color: var(--ink-edge);
 
-      &:hover { background: var(--purple-hover); border-color: var(--purple-hover); }
+      &:hover { background: var(--fuchsia-hover); }
     }
 
     &.btn-secondary {
       background: var(--white);
-      border-color: var(--purple);
+      border-color: var(--fuchsia);
 
-      &:hover { background: var(--purple-tint); }
+      &:hover { background: var(--fuchsia-tint); }
     }
 
     &.btn-large {
@@ -532,11 +538,11 @@
     padding: var(--sp-2) var(--sp-5) var(--sp-2) var(--sp-3);
     font-size: var(--step--1);
     font-weight: 700;
-    background: var(--purple-tint);
-    border: 2px solid var(--purple-line);
+    background: var(--fuchsia-tint);
+    border: 2px solid var(--fuchsia-line);
     border-radius: var(--radius-pill);
 
-    & svg { inline-size: 26px; block-size: 26px; color: var(--purple-deep); }
+    & svg { inline-size: 26px; block-size: 26px; color: var(--fuchsia-text); }
   }
 
   .hero-figure {
@@ -547,8 +553,8 @@
 
   /* --- Trust bar --------------------------------------------------------- */
   .trust-bar {
-    background: var(--purple-tint);
-    border-block-end: 2px solid var(--purple-line);
+    background: var(--fuchsia-tint);
+    border-block-end: 2px solid var(--fuchsia-line);
 
     & ul {
       display: grid;
@@ -570,7 +576,7 @@
       flex: 0 0 auto;
       inline-size: 32px;
       block-size: 32px;
-      color: var(--purple-deep);
+      color: var(--fuchsia-text);
     }
   }
 
@@ -593,7 +599,7 @@
       position: relative;
 
       &:hover, &:focus-within {
-        border-color: var(--purple);
+        border-color: var(--fuchsia);
         box-shadow: var(--shadow);
       }
 
@@ -608,7 +614,7 @@
 
   .card-figure {
     margin: 0;
-    background: var(--purple-tint);
+    background: var(--fuchsia-tint);
 
     & img { inline-size: 100%; }
   }
@@ -648,7 +654,7 @@
     & li {
       padding: var(--sp-6) var(--sp-5) var(--sp-5);
       background: var(--white);
-      border: 3px solid var(--purple-line);
+      border: 3px solid var(--fuchsia-line);
       border-radius: var(--radius-lg);
 
       &::before {
@@ -659,7 +665,7 @@
         padding: var(--sp-1) var(--sp-4);
         font-size: 1rem;
         font-weight: 700;
-        background: var(--purple);
+        background: var(--fuchsia);
         border-radius: var(--radius-pill);
       }
     }
@@ -684,7 +690,7 @@
         inset-block-start: 0.28em;
         inline-size: 1.7rem;
         block-size: 1.7rem;
-        background: var(--purple);
+        background: var(--fuchsia);
         border-radius: 50%;
         mask: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / 76% no-repeat,
               linear-gradient(#000, #000);
@@ -699,8 +705,8 @@
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
     gap: var(--sp-5);
     padding: var(--sp-6);
-    background: var(--purple-tint);
-    border: 3px solid var(--purple-line);
+    background: var(--fuchsia-tint);
+    border: 3px solid var(--fuchsia-line);
     border-radius: var(--radius-lg);
   }
 
@@ -739,7 +745,7 @@
   .treatment-figure {
     margin: 0;
     align-self: start;
-    background: var(--purple-tint);
+    background: var(--fuchsia-tint);
     border-radius: var(--radius);
     overflow: clip;
 
@@ -751,8 +757,8 @@
   .treatment-meta {
     align-self: start;
     padding: var(--sp-5);
-    background: var(--purple-tint);
-    border: 3px solid var(--purple-line);
+    background: var(--fuchsia-tint);
+    border: 3px solid var(--fuchsia-line);
     border-radius: var(--radius);
 
     & dl { margin: 0; }
@@ -771,7 +777,7 @@
     flex-direction: column;
     padding: var(--sp-6);
     background: var(--white);
-    border: 3px solid var(--purple-line);
+    border: 3px solid var(--fuchsia-line);
     border-radius: var(--radius-lg);
 
     & blockquote {
@@ -794,7 +800,7 @@
       border: 3px solid var(--line);
       border-radius: var(--radius);
 
-      &[open] { border-color: var(--purple); }
+      &[open] { border-color: var(--fuchsia); }
     }
 
     & summary {
@@ -811,14 +817,14 @@
 
       &::-webkit-details-marker { display: none; }
 
-      &:hover { background: var(--purple-tint); }
+      &:hover { background: var(--fuchsia-tint); }
 
       &::after {
         content: "";
         flex: 0 0 auto;
         inline-size: 2rem;
         block-size: 2rem;
-        background: var(--purple-deep);
+        background: var(--fuchsia-text);
         mask: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M12 5v14M5 12h14'/%3E%3C/svg%3E") center / contain no-repeat;
         transition: rotate 0.18s ease;
       }
@@ -868,8 +874,8 @@
       border: 3px solid var(--line);
       border-radius: var(--radius-sm);
 
-      &:hover { border-color: var(--purple-line); }
-      &:focus { border-color: var(--purple-deep); }
+      &:hover { border-color: var(--fuchsia-line); }
+      &:focus { border-color: var(--fuchsia-text); }
       &[aria-invalid="true"] { border-color: var(--danger); }
     }
 
@@ -910,8 +916,8 @@
   /* --- Contact panels ---------------------------------------------------- */
   .contact-panel {
     padding: var(--sp-6);
-    background: var(--purple-tint);
-    border: 3px solid var(--purple-line);
+    background: var(--fuchsia-tint);
+    border: 3px solid var(--fuchsia-line);
     border-radius: var(--radius-lg);
 
     & + .contact-panel { margin-block-start: var(--sp-6); }
@@ -944,7 +950,7 @@
     & th, & td {
       padding-block: var(--sp-3);
       text-align: start;
-      border-block-end: 2px solid var(--purple-line);
+      border-block-end: 2px solid var(--fuchsia-line);
     }
 
     & th { font-weight: 700; }
@@ -961,8 +967,8 @@
     gap: var(--sp-5) var(--sp-7);
     align-items: center;
     padding: var(--sp-7);
-    background: var(--purple-tint);
-    border: 3px solid var(--purple);
+    background: var(--fuchsia-tint);
+    border: 3px solid var(--fuchsia);
     border-radius: var(--radius-lg);
 
     & p { margin-block-end: 0; }
@@ -980,15 +986,98 @@
     text-decoration: none;
     white-space: nowrap;
 
-    & svg { inline-size: 0.9em; block-size: 0.9em; color: var(--purple-deep); }
+    & svg { inline-size: 0.9em; block-size: 0.9em; color: var(--fuchsia-text); }
     &:hover { text-decoration: underline; text-decoration-thickness: 3px; }
+  }
+
+  /* --- Call bar ----------------------------------------------------------
+     Sits directly under the header on every page. The single most useful
+     thing on the site for this audience, so it comes before anything else. */
+  .call-bar {
+    padding-block: var(--sp-4);
+    background: var(--white);
+    border-block-end: 3px solid var(--fuchsia-line);
+  }
+
+  .call-bar-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-3);
+    min-block-size: 76px;
+    padding: var(--sp-3) var(--sp-5);
+    font-size: clamp(1.15rem, 0.95rem + 1vw, 1.65rem);
+    font-weight: 700;
+    line-height: 1.25;
+    text-align: center;
+    text-decoration: none;
+    color: var(--ink);
+    background: var(--fuchsia);
+    border: 4px solid var(--ink-edge);
+    border-radius: var(--radius-lg);
+
+    & svg { flex: 0 0 auto; inline-size: 1.5em; block-size: 1.5em; }
+    &:hover { background: var(--fuchsia-hover); text-decoration: none; }
+  }
+
+  /* --- Radio group -------------------------------------------------------- */
+  .fieldset {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-inline-size: 0;
+
+    & legend {
+      padding: 0;
+      font-size: var(--step-1);
+      font-weight: 700;
+    }
+  }
+
+  .radio-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3) var(--sp-4);
+    margin-block-start: var(--sp-3);
+  }
+
+  .radio {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-3);
+    min-block-size: var(--tap);
+    padding: var(--sp-2) var(--sp-5) var(--sp-2) var(--sp-4);
+    font-size: var(--step-0);
+    font-weight: 600;
+    background: var(--white);
+    border: 3px solid var(--line);
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+
+    &:hover { border-color: var(--fuchsia-line); background: var(--fuchsia-tint); }
+
+    /* The whole pill reacts, not just the dot — a much bigger visual cue */
+    &:has(input:checked) {
+      border-color: var(--fuchsia);
+      background: var(--fuchsia-tint);
+    }
+  }
+
+  /* Beats the generic .field input sizing above */
+  .field .radio input {
+    inline-size: 28px;
+    block-size: 28px;
+    min-block-size: 0;
+    margin: 0;
+    padding: 0;
+    accent-color: var(--fuchsia-text);
   }
 
   /* --- Page header ------------------------------------------------------- */
   .page-header {
     padding-block: var(--sp-7);
-    background: var(--purple-tint);
-    border-block-end: 3px solid var(--purple-line);
+    background: var(--fuchsia-tint);
+    border-block-end: 3px solid var(--fuchsia-line);
 
     & h1 { margin-block-end: var(--sp-4); }
   }
@@ -1026,8 +1115,8 @@
   /* --- Footer ------------------------------------------------------------ */
   .site-footer {
     padding-block: var(--sp-7) var(--sp-5);
-    background: var(--purple-tint);
-    border-block-start: 3px solid var(--purple-line);
+    background: var(--fuchsia-tint);
+    border-block-start: 3px solid var(--fuchsia-line);
   }
 
   .footer-grid {
@@ -1035,7 +1124,7 @@
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
     gap: var(--sp-6);
     padding-block-end: var(--sp-6);
-    border-block-end: 2px solid var(--purple-line);
+    border-block-end: 2px solid var(--fuchsia-line);
 
     & h2 {
       margin-block-end: var(--sp-4);
@@ -1052,7 +1141,7 @@
       display: inline-flex;
       align-items: center;
       min-block-size: 48px;
-      color: var(--purple-deep);
+      color: var(--fuchsia-text);
     }
 
     & address { font-style: normal; }
@@ -1079,7 +1168,7 @@
       display: inline-flex;
       align-items: center;
       min-block-size: 48px;
-      color: var(--purple-deep);
+      color: var(--fuchsia-text);
     }
   }
 }

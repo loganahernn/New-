@@ -9,26 +9,24 @@ requirement or something that would actively mislead patients if left as-is.
 
 ---
 
-## 1. Contact details — **must**
+## 1. Contact details
 
-The same block appears in the footer of every page, plus the contact page and the
-call-to-action bands.
+The phone number is now **real**: `01582 462880`, taken from your existing site
+and used across every page, the call bar, the footer and the JSON-LD.
+
+Still to replace:
 
 | Placeholder | Where | Replace with |
 | --- | --- | --- |
-| `01632 960 001` / `tel:+441632960001` | every page footer, CTA bands, `contact.html`, `accessibility.html` | Real practice number. Keep the `tel:` link in full international form (`+44…`, no leading zero). |
 | `reception@example.com` | every page footer, `contact.html`, `accessibility.html`, form `data-mailto` | Real address. |
 | `1 Example Street, Townville, AB1 2CD` | every page footer, `contact.html` | Real address. |
 | Opening hours table | `contact.html` | Real hours. Also update the JSON-LD in `index.html`. |
 | "Getting here" text | `contact.html` | Parking, transport, step-free access. |
 
-`01632 960 001` is an Ofcom number reserved for drama, so it can never ring a
-real person — but it will look plausible to a visitor. Do not ship it.
-
 Quick check that you got them all:
 
 ```sh
-grep -rn "1632960001\|01632 960 001\|example.com\|Example Street\|Townville\|AB1 2CD" .
+grep -rn "example.com\|Example Street\|Townville\|AB1 2CD" .
 ```
 
 ## 2. Prices — **must**
@@ -116,6 +114,13 @@ The form in `contact.html` is configured by two attributes:
 
 Set a real endpoint before launch. A honeypot field catches basic bots; add the
 provider's own spam filtering as well.
+
+Your current site uses reCAPTCHA. This rebuild deliberately does not: it would be
+the only third-party request on the site, it sets cookies that need consent under
+PECR, and "click the traffic lights" puzzles are exactly the sort of thing that
+defeats an older visitor. The honeypot plus your form provider's own filtering is
+usually enough for a practice this size. If the spam volume proves otherwise, add
+it — and add a consent banner at the same time.
 
 Because enquiries may contain health information, check your provider stores
 submissions in the UK/EEA or has an adequate transfer route, and cover it in the

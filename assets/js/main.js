@@ -166,8 +166,25 @@
 
         clearError(input);
 
+        // A radio's .value is its own value whether or not it is checked, so
+        // the group has to be judged as a whole — and only once.
+        if (input.type === "radio") {
+          if (!input.required) continue;
+          var group = form.querySelectorAll('input[name="' + input.name + '"]');
+          if (group[0] !== input) continue;
+          if (!form.querySelector('input[name="' + input.name + '"]:checked')) {
+            showError(input, "Please choose one of these.");
+            invalid.push(input);
+          }
+          continue;
+        }
+
+        // The select's first option is a "Choose an option" prompt with an
+        // empty value, so the same empty-check covers it.
         if (input.hasAttribute("required") && !input.value.trim()) {
-          showError(input, "Please fill this in.");
+          showError(input, input.tagName === "SELECT"
+            ? "Please choose an option."
+            : "Please fill this in.");
           invalid.push(input);
           continue;
         }
@@ -189,6 +206,17 @@
 
     // Clear a field's error as soon as the visitor starts fixing it.
     form.addEventListener("input", function (event) {
+      var target = event.target;
+      if (target.type === "radio") {
+        var first = form.querySelector('input[name="' + target.name + '"]');
+        if (first) clearError(first);
+        return;
+      }
+      if (target.getAttribute("aria-invalid") === "true") clearError(target);
+    });
+
+    // <select> fires change, not input, in some browsers
+    form.addEventListener("change", function (event) {
       if (event.target.getAttribute("aria-invalid") === "true") {
         clearError(event.target);
       }
@@ -288,6 +316,11 @@
 
     function labelFor(formEl, name) {
       var control = formEl.elements[name];
+      if (control && control.length && control[0] && control[0].type === "radio") {
+        var legend = control[0].closest("fieldset");
+        legend = legend && legend.querySelector("legend");
+        if (legend) return legend.textContent.replace(/\s*\*\s*$/, "").trim();
+      }
       if (control && control.id) {
         var label = formEl.querySelector("label[for='" + control.id + "']");
         if (label) return label.textContent.replace(/\s*\*\s*$/, "").trim();

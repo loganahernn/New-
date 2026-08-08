@@ -45,10 +45,9 @@
     </nav>
 
     <div class="header-actions">
-      <!-- TODO: real practice number — see PLACEHOLDERS.md -->
-      <a class="header-phone" href="tel:+441632960001">
+            <a class="header-phone" href="tel:+441582462880">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6.6 2.9 9 3.4l1 4-2.2 1.6a13 13 0 0 0 7.2 7.2l1.6-2.2 4 1 .5 2.4a2 2 0 0 1-2 2.4A17.5 17.5 0 0 1 4.2 4.9a2 2 0 0 1 2.4-2Z"/></svg>
-        01632 960 001
+        01582 462880
       </a>
 
       <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav">
@@ -59,6 +58,15 @@
     </div>
   </div>
 </header>
+
+<div class="call-bar">
+  <div class="container">
+    <a class="call-bar-link" href="tel:+441582462880">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6.6 2.9 9 3.4l1 4-2.2 1.6a13 13 0 0 0 7.2 7.2l1.6-2.2 4 1 .5 2.4a2 2 0 0 1-2 2.4A17.5 17.5 0 0 1 4.2 4.9a2 2 0 0 1 2.4-2Z"/></svg>
+      <span>Call now for a FREE consultation: 01582 462880</span>
+    </a>
+  </div>
+</div>
 
 <main id="main">
 
@@ -82,11 +90,13 @@
     <div class="container split">
 
       <div id="enquiry">
-        <h2>Send an enquiry</h2>
+        <h2>Prefer to send a message?</h2>
         <p>
-          Tell us roughly what you need and when suits you. We reply within one
-          working day. Please do not include detailed medical information here —
-          we will take that at your appointment.
+          Fill this in and we will get back to you within one working day. If you
+          would rather talk to someone, call us on
+          <a href="tel:+441582462880">01582 462880</a> — that is usually quicker.
+          Please do not include detailed medical information here; we will take
+          that at your appointment.
         </p>
 
         <!--
@@ -100,42 +110,60 @@
         <form data-enquiry-form data-endpoint="" data-mailto="reception@example.com" novalidate>
           <div class="form-grid">
 
+            <div class="field field--full">
+              <label for="message">Please give as much detail about your enquiry as you can <span class="req" aria-hidden="true">*</span></label>
+              <textarea id="message" name="message" required></textarea>
+              <p class="hint">Include the days and times that usually suit you.</p>
+              <p class="error" role="alert"></p>
+            </div>
+
             <div class="field">
-              <label for="name">Your name <span class="req" aria-hidden="true">*</span></label>
+              <label for="name">Name <span class="req" aria-hidden="true">*</span></label>
               <input type="text" id="name" name="name" autocomplete="name" required>
               <p class="error" role="alert"></p>
             </div>
 
             <div class="field">
-              <label for="phone">Phone number</label>
-              <input type="tel" id="phone" name="phone" autocomplete="tel">
-              <p class="hint">The quickest way for us to reach you.</p>
+              <label for="phone">Phone number <span class="req" aria-hidden="true">*</span></label>
+              <input type="tel" id="phone" name="phone" autocomplete="tel" required>
               <p class="error" role="alert"></p>
             </div>
 
             <div class="field field--full">
-              <label for="email">Email address <span class="req" aria-hidden="true">*</span></label>
+              <label for="email">Email <span class="req" aria-hidden="true">*</span></label>
               <input type="email" id="email" name="email" autocomplete="email" required>
               <p class="error" role="alert"></p>
             </div>
 
             <div class="field field--full">
-              <label for="subject">What can we help with?</label>
-              <select id="subject" name="subject">
-                <option>A new full denture</option>
-                <option>A new partial denture</option>
-                <option>Implant-retained dentures</option>
-                <option>A repair or reline</option>
-                <option>A mouthguard or night guard</option>
-                <option>Something else</option>
-              </select>
+              <label for="address">Address</label>
+              <textarea id="address" name="address" rows="3" autocomplete="street-address"></textarea>
               <p class="error" role="alert"></p>
             </div>
 
+            <fieldset class="field field--full fieldset">
+              <legend>Registration <span class="req" aria-hidden="true">*</span></legend>
+              <div class="radio-row">
+                <label class="radio">
+                  <input type="radio" name="registration" value="Existing patient" required>
+                  Existing patient
+                </label>
+                <label class="radio">
+                  <input type="radio" name="registration" value="New patient">
+                  New patient
+                </label>
+              </div>
+              <p class="error" role="alert"></p>
+            </fieldset>
+
             <div class="field field--full">
-              <label for="message">Your message <span class="req" aria-hidden="true">*</span></label>
-              <textarea id="message" name="message" required></textarea>
-              <p class="hint">Include the days and times that usually suit you.</p>
+              <label for="contact-preference">How would you prefer us to reply? <span class="req" aria-hidden="true">*</span></label>
+              <select id="contact-preference" name="contactPreference" required>
+                <option value="">Choose an option</option>
+                <option>By phone</option>
+                <option>By email</option>
+                <option>By post</option>
+              </select>
               <p class="error" role="alert"></p>
             </div>
 
@@ -148,7 +176,7 @@
           </div>
 
           <div class="btn-row">
-            <button class="btn btn-primary" type="submit">Send enquiry</button>
+            <button class="btn btn-primary btn-large" type="submit">Send message</button>
           </div>
 
           <p class="form-status" role="status" hidden></p>
@@ -166,7 +194,7 @@
           <!-- TODO: replace every value in this panel — see PLACEHOLDERS.md -->
           <dl class="detail-list">
             <dt>Telephone</dt>
-            <dd><a href="tel:+441632960001">01632 960 001</a></dd>
+            <dd><a href="tel:+441582462880">01582 462880</a></dd>
             <dt>Email</dt>
             <dd><a href="mailto:reception@example.com">reception@example.com</a></dd>
             <dt>Address</dt>
@@ -280,7 +308,7 @@
         <h2>Get in touch</h2>
         <!-- TODO: replace every value below — see PLACEHOLDERS.md -->
         <ul>
-          <li><a href="tel:+441632960001">01632 960 001</a></li>
+          <li><a href="tel:+441582462880">01582 462880</a></li>
           <li><a href="mailto:reception@example.com">reception@example.com</a></li>
           <li>1 Example Street<br>Townville<br>AB1 2CD</li>
         </ul>
