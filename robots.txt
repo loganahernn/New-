@@ -1,6 +1,6 @@
+# PREVIEW ONLY — this blocks the whole site from search engines.
+# Delete everything above the Sitemap line before going live on the real domain.
 User-agent: *
-Allow: /
-Disallow: /privacy.html
-Disallow: /accessibility.html
+Disallow: /
 
 Sitemap: https://www.thedentureclinic.org.uk/sitemap.xml

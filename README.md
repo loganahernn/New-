@@ -41,14 +41,41 @@ python3 -m http.server 8000
 
 Any static host works. The repository root *is* the site root.
 
-**GitHub Pages** — Settings → Pages → Deploy from branch → `main` / `/ (root)`.
-`404.html` is picked up automatically.
+### Quickest way to see it on a real URL — GitHub Pages
+
+Three clicks, no build:
+
+1. Repo **Settings** → **Pages**
+2. Source: **Deploy from a branch**
+3. Branch: **`claude/new-repo-setup-oddhqt`**, folder **`/ (root)`** → **Save**
+
+A minute later it is live at:
+
+```
+https://loganahernn.github.io/New-/
+```
+
+Every page has been checked served from that `/New-/` subpath, so the
+stylesheet, illustrations, links and the 404 page all resolve correctly there.
+
+**That URL is public.** While the site still carries placeholder GDC numbers,
+invented opening hours and stand-in reviews, it must not be indexed:
+
+- every page carries `<meta name="robots" content="noindex, nofollow">`
+- `robots.txt` disallows everything
+- the canonical tags still point at `www.thedentureclinic.org.uk`
+
+**Before going live on the real domain, undo all three** — otherwise the
+finished site will be invisible to Google. They are marked `PREVIEW ONLY` in the
+source.
+
+### Other hosts
 
 **Netlify / Cloudflare Pages / Vercel** — connect the repo, leave the build
 command empty, set the publish directory to `/`.
 
-Whichever you choose, update the canonical URLs, `sitemap.xml` and `robots.txt`
-if the domain differs (item 9 in `PLACEHOLDERS.md`).
+Whichever you choose, update the canonical URLs and `sitemap.xml` if the domain
+differs (item 9 in `PLACEHOLDERS.md`).
 
 ## How it is put together
 

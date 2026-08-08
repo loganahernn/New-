@@ -181,6 +181,24 @@ When you swap them in:
 
 ---
 
+## Turn the site back on for search engines — **must, at launch**
+
+The site is currently hidden from Google on purpose, because a public preview
+carrying a real practice's name beside placeholder GDC numbers and invented
+opening hours should not be indexed. Three things to undo when the real content
+is in and you move to the live domain:
+
+1. Delete the `<meta name="robots" content="noindex, nofollow">` line from all
+   eight HTML files (each is marked `PREVIEW ONLY`).
+2. Replace `robots.txt` with the normal `User-agent: * / Allow: /` version,
+   keeping the `Sitemap:` line.
+3. Check every `<link rel="canonical">` and `og:url` points at the domain the
+   site is actually served from.
+
+```sh
+grep -rn "PREVIEW ONLY" .
+```
+
 ## Final pre-launch checklist
 
 - [ ] Grep for leftovers: `grep -rn "TODO\|Placeholder\|placeholder\|\[date\]" --include="*.html" .`
@@ -190,4 +208,5 @@ When you swap them in:
 - [ ] Check every page at 320px wide and at 200% zoom
 - [ ] Tab through each page — focus must stay visible and never get trapped
 - [ ] Check both light and dark themes — the toggle is in the header
+- [ ] Remove the noindex tags and reset robots.txt (see the section above)
 - [ ] Run Lighthouse; confirm the accessibility score and fix anything flagged
