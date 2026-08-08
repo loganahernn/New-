@@ -9,24 +9,39 @@ requirement or something that would actively mislead patients if left as-is.
 
 ---
 
-## 1. Contact details
+## 1. Contact details — mostly done
 
-The phone number is now **real**: `01582 462880`, taken from your existing site
-and used across every page, the call bar, the footer and the JSON-LD.
+Now real across the whole site:
 
-Still to replace:
-
-| Placeholder | Where | Replace with |
+| Detail | Value | Where it appears |
 | --- | --- | --- |
-| `reception@example.com` | every page footer, `contact.html`, `accessibility.html`, form `data-mailto` | Real address. |
-| `1 Example Street, Townville, AB1 2CD` | every page footer, `contact.html` | Real address. |
-| Opening hours table | `contact.html` | Real hours. Also update the JSON-LD in `index.html`. |
-| "Getting here" text | `contact.html` | Parking, transport, step-free access. |
+| Freephone | `0800 052 3126` | Call bar, header, every call band, footer, contact page |
+| Harpenden | `01582 462800` | Footer, contact page |
+| St Albans | `01727 856967` | Footer, contact page |
+| Email | `dentureclinic@btinternet.com` | Footer, contact page, form fallback |
+| Address | 397 Luton Road, Harpenden AL5 3NF | Footer, contact page, JSON-LD |
 
-Quick check that you got them all:
+**Check the Harpenden number.** It is set to `01582 462800`. The button on the
+existing site reads `01582 462880` — the last two digits differ. One of the two
+is wrong and it needs confirming before launch.
+
+**Why the freephone leads.** The call bar and header appear on every page, and
+there are two branches, so a single branch number in a site-wide button would be
+wrong half the time. The freephone works for either and costs the caller nothing,
+which matters for this audience. To put a branch number back, change the `href`
+and text on `.call-bar-link` and `.header-phone` in each page.
+
+Still missing:
+
+- **St Albans address** — only Harpenden is on the site. If St Albans is a
+  separate premises rather than a phone line, it needs its own address block,
+  its own hours, and probably its own JSON-LD entry.
+- **Opening hours** — `contact.html` and the JSON-LD in `index.html` both still
+  carry invented hours. This is the most visible remaining placeholder.
+- **Getting here** — parking, nearest bus stop, step-free access.
 
 ```sh
-grep -rn "example.com\|Example Street\|Townville\|AB1 2CD" .
+grep -rn "Placeholder\|TODO\|£000\|000000" *.html
 ```
 
 ## 2. Prices — **must**

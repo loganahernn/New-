@@ -928,6 +928,10 @@
   .detail-list {
     margin: 0;
 
+    /* A long email address has no space to break at, so let it break anywhere
+       rather than push the panel past the viewport. */
+    & dd, & a { overflow-wrap: anywhere; }
+
     & dt { font-weight: 700; color: var(--ink-soft); }
     & dd {
       margin: 0 0 var(--sp-5);
@@ -1136,7 +1140,7 @@
     }
 
     & ul { margin: 0; padding: 0; list-style: none; }
-    & li { margin-block-end: var(--sp-1); }
+    & li { margin-block-end: var(--sp-1); overflow-wrap: anywhere; }
 
     /* Footer links get the same generous target as everything else */
     & a {
