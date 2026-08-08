@@ -137,15 +137,31 @@ from memory. If you reword them, keep them accurate:
 
 ## 12. Favicon and logo
 
-The tooth mark is an inline SVG defined per page (in the `<link rel="icon">` data
-URI and in the header/footer markup). Swap it for real branding if you have it.
+The tooth mark is an inline SVG in the page markup and in the `<link rel="icon">`
+data URI — a purple rounded square with a white tooth. Swap it for real branding
+if you have it.
 
-## 13. Photography
+## 13. Illustrations and photography
 
-There is no photography anywhere — the hero is an abstract SVG. Real photos of
-the practice, the laboratory and the team would lift the site more than any other
-single change. Add them with explicit `width`/`height` attributes and
-`loading="lazy"` on anything below the fold.
+`assets/img/` contains seven SVG illustrations drawn specifically for this site.
+They are original artwork: no licence to comply with, no attribution required,
+nothing that can be withdrawn later.
+
+They are deliberately a stand-in for the real thing. Photographs of the practice,
+the laboratory and the team would lift this site more than any other single
+change, and for an older audience seeing the actual room and the actual faces
+does more for confidence than any illustration.
+
+When you swap them in:
+
+- Keep the `width` and `height` attributes accurate to the file, so the layout
+  does not jump while the image loads.
+- Keep `loading="lazy"` on anything below the fold; the hero should stay eager.
+- Leave `alt=""` where the adjacent heading already names the subject — a photo
+  of a real person or the premises should get a real description instead.
+- If you buy stock photography, keep the licence on file. If you use a free
+  source, check the specific licence for that image rather than trusting the
+  site as a whole.
 
 ---
 

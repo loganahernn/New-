@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 300" role="img" aria-labelledby="t d">
+<title id="t">A custom mouthguard</title>
+<desc id="d">An illustration of a custom-fitted mouthguard shaped to the arch of the teeth.</desc>
+<!-- Original illustration drawn for The Denture Clinic. No third-party imagery, no licence obligations. -->
+<rect width="420" height="300" rx="28" fill="#F4EEFC"/><circle cx="336" cy="72" r="90" fill="#E7DBF8" opacity="0.7"/><path d="M62 116 C62 214 128 258 210 258 C292 258 358 214 358 116 C358 100 344 92 330 98 C288 116 250 122 210 122 C170 122 132 116 90 98 C76 92 62 100 62 116 Z" fill="#CDB6F0" opacity="0.55" stroke="#9B79D6" stroke-width="4"/><path d="M92 132 C96 202 148 234 210 234 C272 234 324 202 328 132" fill="none" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round" opacity="0.85"/>
+</svg>

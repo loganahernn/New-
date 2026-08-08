@@ -1,8 +1,11 @@
 # The Denture Clinic — website
 
-A static marketing site for a denture practice: seven pages of plain HTML, one
-stylesheet, one small JavaScript file. No build step, no dependencies, no
-third-party requests.
+A static marketing site for a denture practice: eight pages of plain HTML, one
+stylesheet, one small JavaScript file and a set of original SVG illustrations.
+No build step, no dependencies, no third-party requests.
+
+Designed for an older audience — large type, large targets, black on white, and
+a phone number that is never more than a glance away.
 
 > **Not ready to publish.** Every business-specific detail — phone number,
 > address, prices, testimonials, GDC numbers — is a placeholder. See
@@ -53,40 +56,57 @@ if the domain differs (item 9 in `PLACEHOLDERS.md`).
 ├── index.html, treatments.html, about.html, faqs.html,
 │   contact.html, privacy.html, accessibility.html, 404.html
 ├── assets/
-│   ├── css/styles.css      single stylesheet, ~22 commented sections
-│   └── js/main.js          nav toggle, sticky header, form handling
+│   ├── css/styles.css      single stylesheet, layered and commented
+│   ├── js/main.js          nav toggle, sticky header, print, form handling
+│   └── img/*.svg           seven original illustrations
 ├── robots.txt
 ├── sitemap.xml
 └── PLACEHOLDERS.md         what to replace before launch
 ```
 
-**Design tokens.** Colours, type scale, spacing, radii and shadows are CSS custom
-properties at the top of `styles.css`. Colours are OKLCH, which is perceptually
-uniform — stepping the lightness channel gives an even ramp instead of the lumpy
-one hex produces. Rebranding is mostly a matter of changing the `--teal-*` ramp
-and the semantic tokens built on it, but re-check contrast afterwards: both
-themes were measured against WCAG AA, not eyeballed.
+**Built for an older audience.** That is the constraint everything else follows
+from:
+
+- Body text starts at 19px and scales up, never down. Nothing on the site is
+  below 18px.
+- Every button, link and form control is at least 56px tall — more than double
+  the 24px WCAG 2.2 minimum. Small targets are the biggest single obstacle for
+  anyone with less steady hands or poorer close vision.
+- Black on white throughout: a contrast ratio of 21:1.
+- Links inside paragraphs stay underlined, so they are never identified by
+  colour alone.
+- The phone number sits in the header on desktop and in a large call band on
+  every page. It is the action most of these visitors actually want, so the
+  "Book a consultation" button is hidden on desktop rather than competing with
+  it — it still appears in the mobile menu.
+- One theme, no dark mode, no theme switch: one fewer control to understand.
+
+**Design tokens.** Colour, type scale, spacing, radii and targets are CSS custom
+properties at the top of `styles.css`. The palette is white, black, and a light
+purple (`--purple: #c9a9f0`) used for buttons and highlights, with a deeper
+purple (`--purple-deep: #5b2e96`) for links and focus rings. Both were measured,
+not eyeballed: black on the button purple is 10.4:1, and the link purple on
+white is 9.2:1.
 
 **Cascade layers.** The stylesheet declares `@layer reset, base, layout,
 components, utilities`. A later layer beats an earlier one no matter how
-specific the selector, which removes a whole category of specificity bug — an
-earlier version of this site had an unreadable header button because a layout
-rule outranked the component that styled it.
+specific the selector, which removes a whole category of specificity bug.
 
-**Light and dark.** Every semantic token is a `light-dark()` pair, so the entire
-theme flips from the single `color-scheme` declaration on `:root`. The site
-follows the operating system by default; the header button overrides it and
-stores the choice. A tiny inline script in each `<head>` applies a stored choice
-before first paint, so there is no flash of the wrong theme.
+**Illustrations.** `assets/img/` holds seven SVG illustrations drawn from
+scratch for this site — a full denture, a partial with clasps, an
+implant-retained denture, an immediate denture, a repair, a mouthguard, and a
+larger hero version. They are original artwork, so there is no licence,
+attribution or expiry to track. Being SVG they stay sharp at any size and add
+about 3KB each. Swap them for real photographs whenever you have them.
 
-**Modern layout.** Container queries let cards adapt to the width of their own
-column rather than the viewport. Cross-document view transitions animate between
-pages where supported. Speculation rules prerender same-origin links on hover, so
-navigation feels instant. All three degrade silently to ordinary behaviour.
+**Modern layout.** Container queries let cards adapt to their own column width
+rather than the viewport. Cross-document view transitions animate between pages
+where supported, and speculation rules prerender same-origin links on hover.
+All degrade silently.
 
 **No templating.** The header and footer are duplicated in each page. That is the
 cost of having no build step: a change to the navigation means editing every
-file. With seven pages it is manageable, and `sed` handles the mechanical cases:
+file. With eight pages it is manageable, and `sed` handles the mechanical cases:
 
 ```sh
 sed -i 's/OLD PHONE/NEW PHONE/g' *.html
@@ -99,10 +119,10 @@ Eleventy at that point.
 navigation is visible in the markup and only collapses once the toggle script has
 run, so a failed script leaves the menu open rather than unreachable.
 
-**Accessibility.** Skip link, visible focus outlines, semantic landmarks, ordered
-headings, labelled form fields with `role="alert"` error slots, AA contrast in
-both themes, and a `prefers-reduced-motion` block that disables smooth scrolling,
-transitions and view transitions.
+**Accessibility.** Skip link, thick visible focus outlines, semantic landmarks,
+ordered headings, labelled form fields with `role="alert"` error slots, 21:1 body
+contrast, 56px minimum targets, and a `prefers-reduced-motion` block that
+disables smooth scrolling, transitions and view transitions.
 
 **Contact form.** No backend. Set `data-endpoint` on the form to POST enquiries as
 JSON to any handler you like; leave it empty and it falls back to opening the
