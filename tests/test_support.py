@@ -104,3 +104,42 @@ def test_cover_letter_survives_a_sparse_profile():
     profile = {"name": "Test", "email": "t@example.com", "playing_age": {"min": 18, "max": 25}}
     letter = render(Role(url="https://x.test/1", title="Role"), profile)
     assert "Test" in letter
+
+
+# --- "apply to everything I fit" semantics ---------------------------------
+
+
+def test_zero_limit_means_no_cap():
+    from tt_autoapply.cli import _within_limit
+
+    # 0 / None / negative all mean uncapped.
+    for limit in (0, None, -1):
+        assert _within_limit(0, limit)
+        assert _within_limit(9999, limit)
+
+    # A positive number still caps.
+    assert _within_limit(4, 5)
+    assert not _within_limit(5, 5)
+
+
+def test_seen_but_not_applied_role_is_rechecked(tmp_path):
+    """A role skipped mid-run must not be lost just because we recorded it."""
+    with Store(tmp_path / "test.db") as store:
+        role = Role(url="https://x.test/1", title="Role")
+        store.record_role(role)          # first run saw it...
+        store.record_role(role)          # ...and a later run sees it again
+        assert not store.has_applied(role.id), "still eligible to apply"
+
+
+def test_rejected_lookup_only_fires_for_non_fitting_roles(tmp_path):
+    with Store(tmp_path / "test.db") as store:
+        good = Role(url="https://x.test/1", title="Fits")
+        bad = Role(url="https://x.test/2", title="Does not fit")
+        store.record_role(good)
+        store.record_role(bad)
+        store.record_match(MatchResult(good.id, True, 0.9, ["fits"], []))
+        store.record_match(MatchResult(bad.id, False, 0.2, [], ["wrong age"]))
+
+        assert store.was_rejected(bad.id)
+        assert not store.was_rejected(good.id)
+        assert not store.was_rejected("never-seen")

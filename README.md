@@ -17,10 +17,11 @@ Two things worth knowing before you point it at your account:
 1. **Check Talent Talks' terms.** Most casting sites' T&Cs restrict automated
    access, and enforcement is usually an account suspension. That is your call
    to make, but make it knowingly. Start in `manual` or dry-run mode.
-2. **Volume is not the goal.** Casting directors notice a performer who applies
-   to everything. The value here is the *scanning* — never missing a brief you
-   fit — not the volume of submissions. The default limits (5 per run, 15 per
-   day, 45s apart) are there on purpose.
+2. **It applies to everything you fit, by default.** The caps are off
+   (`limits: 0`), so any brief that clears the filters gets an application.
+   That's the intent — but it also means those filters are the only thing
+   between you and a role you shouldn't have gone for. Tune them with `scan`
+   until the verdicts look right, *then* pass `--apply`.
 
 ## Install
 
@@ -100,6 +101,17 @@ why:
 Every role you apply to is recorded in `state/applications.db`, so a role is
 never applied to twice even across runs.
 
+The only permanent skip is a role you've already applied to. Everything else is
+re-checked on every run, so a brief that got passed over — a run that died
+part-way, a submission that failed, a listing edited after it was posted — is
+picked up next time rather than lost. Set `matching.skip_rejected: true` if
+you'd rather not re-spend LLM calls on roles already ruled out.
+
+There's no cap on how many roles a run will apply to. The 45-second gap between
+submissions stays regardless; that's about not hammering the site with a burst,
+not about limiting how many roles you go for. To throttle yourself while
+tuning, set `limits.max_applications_per_run` to a number, or pass `--limit`.
+
 ## How matching works
 
 **Rules** (default, free, no API key). Hard filters that block outright:
@@ -142,9 +154,10 @@ exactly what would have been sent before you go live.
 pip install -e '.[dev]' && pytest
 ```
 
-42 tests. The matcher ones cover the filters above, including the cases that
+45 tests. The matcher ones cover the filters above, including the cases that
 bite: `"female"` not being read as `"male"`, `"a black comedy"` not being read
-as an ethnicity requirement, and dry runs never counting as applications. Three
+as an ethnicity requirement, dry runs never counting as applications, and a
+seen-but-not-applied role staying eligible on the next run. Three
 end-to-end tests run the full scrape → match → fill → submit chain against a
 local fake casting site in a real browser (skipped if Chromium isn't installed).
 

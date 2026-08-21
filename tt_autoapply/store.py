@@ -111,6 +111,17 @@ class Store:
         )
         self.conn.commit()
 
+    def was_rejected(self, role_id: str) -> bool:
+        """True if a previous run evaluated this role and it didn't fit.
+
+        Only consulted when `matching.skip_rejected` is on — by default a role
+        is re-evaluated every run, since a listing can be edited after posting.
+        """
+        cur = self.conn.execute(
+            "SELECT 1 FROM matches WHERE role_id = ? AND fits = 0", (role_id,)
+        )
+        return cur.fetchone() is not None
+
     # --- applications ---
 
     def has_applied(self, role_id: str) -> bool:

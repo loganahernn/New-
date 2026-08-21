@@ -30,9 +30,11 @@ DEFAULTS: dict[str, Any] = {
         "user_agent": None,
         "slow_mo_ms": 0,
     },
+    # 0 means no cap: apply to every brief that fits. The delay between
+    # submissions stays — that's about not hammering the site, not about volume.
     "limits": {
-        "max_applications_per_run": 5,
-        "max_applications_per_day": 15,
+        "max_applications_per_run": 0,
+        "max_applications_per_day": 0,
         "seconds_between_applications": 45,
     },
     "matching": {

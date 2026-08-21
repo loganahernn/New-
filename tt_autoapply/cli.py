@@ -85,14 +85,23 @@ def _match(role: Role, profile: dict, cfg: Config) -> MatchResult:
     return combined
 
 
+def _within_limit(count: int, limit) -> bool:
+    """A limit of 0, None or negative means no cap — apply to everything that fits."""
+    if limit is None:
+        return True
+    limit = int(limit)
+    return limit <= 0 or count < limit
+
+
 def _run_pipeline(cfg: Config, *, do_apply: bool, limit: int | None) -> int:
     profile = cfg.load_profile()
     store = Store(cfg.resolve_path("storage.database"))
     template = cfg.resolve_path("application.cover_letter_template", "templates/cover_letter.j2")
 
-    max_per_run = limit if limit is not None else int(cfg.get("limits.max_applications_per_run", 5))
-    max_per_day = int(cfg.get("limits.max_applications_per_day", 15))
+    max_per_run = limit if limit is not None else cfg.get("limits.max_applications_per_run", 0)
+    max_per_day = cfg.get("limits.max_applications_per_day", 0)
     already_today = store.applications_today()
+    skip_rejected = bool(cfg.get("matching.skip_rejected", False))
 
     results: list[tuple[Role, MatchResult]] = []
     applications: list[ApplicationResult] = []
@@ -109,10 +118,15 @@ def _run_pipeline(cfg: Config, *, do_apply: bool, limit: int | None) -> int:
         print(f"Found {len(roles)} listings at {cfg.listing_url}")
 
         for role in roles:
-            is_new = store.record_role(role)
+            store.record_role(role)
+
+            # The only permanent skip is a role already applied to. Everything
+            # else gets re-checked every run — a brief that was passed over
+            # because a limit was hit, a submission failed, or the listing was
+            # later edited must not be lost just because we've seen it once.
             if store.has_applied(role.id):
                 continue
-            if not is_new and not cfg.get("rescan_seen", False):
+            if skip_rejected and store.was_rejected(role.id):
                 continue
 
             try:
@@ -129,10 +143,11 @@ def _run_pipeline(cfg: Config, *, do_apply: bool, limit: int | None) -> int:
             if not match.fits:
                 continue
 
-            if len([a for a in applications if a.status == "applied"]) >= max_per_run:
+            sent = len([a for a in applications if a.status == "applied"])
+            if not _within_limit(sent, max_per_run):
                 print("  - per-run application limit reached")
                 continue
-            if already_today + len([a for a in applications if a.status == "applied"]) >= max_per_day:
+            if not _within_limit(already_today + sent, max_per_day):
                 print("  - daily application limit reached")
                 continue
 
