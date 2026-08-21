@@ -46,16 +46,33 @@ cp config.example.yaml config.yaml
 cp profile.example.yaml profile.yaml
 ```
 
-Fill in `profile.yaml` — name, contact, playing age, ethnicity, accents,
-skills, credits. Everything the matcher and the cover-letter writer say about
-you comes from this file and nothing else, so accuracy pays off directly.
-
-Then log in once. A real browser opens, you sign in yourself, and the cookies
-are saved to `state/session.json`. Your password is never handled by the tool:
+Log in once. A real browser opens, you sign in with your existing Talent Talks
+account, and the cookies are saved to `state/session.json`. Your password is
+never handled by the tool:
 
 ```bash
 tt-autoapply login
 ```
+
+### Import your profile instead of retyping it
+
+Your playing age, height, accents, skills and credits are already on their site.
+Pull them straight off your own profile page:
+
+```bash
+tt-autoapply import-profile --url https://www.talenttalks.co.uk/profile/you
+tt-autoapply import-profile --dry-run --url ...   # see what it found first
+```
+
+It reads definition lists, two-column tables and `Label: value` lines, maps what
+it recognises onto the profile schema, and prints every field it changed. Values
+you'd already set by hand are kept where the import found nothing, the previous
+`profile.yaml` is saved as `profile.yaml.bak`, and anything still blank that the
+matcher needs is listed at the end.
+
+Whatever it can't find — phone number, travel radius — fill in by hand. Everything
+the matcher and the cover-letter writer say about you comes from this file and
+nothing else, so accuracy pays off directly.
 
 ### Point it at the real page structure
 
@@ -82,6 +99,7 @@ run `tt-autoapply login` first, or use `--headed` to watch what happens.
 ## Use
 
 ```bash
+tt-autoapply import-profile  # build profile.yaml from your own profile page
 tt-autoapply scan            # scrape and match, apply to nothing
 tt-autoapply run             # dry run: fills forms, screenshots, submits nothing
 tt-autoapply run --apply     # live: actually submits
@@ -154,12 +172,13 @@ exactly what would have been sent before you go live.
 pip install -e '.[dev]' && pytest
 ```
 
-45 tests. The matcher ones cover the filters above, including the cases that
+69 tests. The matcher ones cover the filters above, including the cases that
 bite: `"female"` not being read as `"male"`, `"a black comedy"` not being read
 as an ethnicity requirement, dry runs never counting as applications, and a
-seen-but-not-applied role staying eligible on the next run. Three
-end-to-end tests run the full scrape → match → fill → submit chain against a
-local fake casting site in a real browser (skipped if Chromium isn't installed).
+seen-but-not-applied role staying eligible on the next run. Four end-to-end
+tests run the full scrape → match → fill → submit chain, and the profile
+import, against a local fake casting site in a real browser (skipped if
+Chromium isn't installed).
 
 ## Layout
 
@@ -171,6 +190,7 @@ tt_autoapply/
   scraper.py      listing + detail extraction
   selectors.py    selector parsing (no browser dependency)
   discover.py     selector discovery for a site you haven't mapped yet
+  profile_import.py  builds profile.yaml from your own profile page
   matcher.py      rule-based matching — the filters live here
   llm.py          optional Claude brief matching
   coverletter.py  Jinja2 cover letters

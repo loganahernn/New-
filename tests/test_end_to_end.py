@@ -151,3 +151,33 @@ def test_live_apply_submits_and_confirms(browser_page, cfg):
     result = apply_via_form(browser_page, cfg, role, PROFILE, letter, dry_run=False)
     assert result.status == "applied", result.detail
     assert browser_page.locator("#confirmation").count() == 1
+
+
+def test_import_profile_from_a_real_page(browser_page, site_url, tmp_path):
+    """Reads the performer's own profile page rather than making them retype it."""
+    from tt_autoapply.profile_import import merge_profile, scrape_profile, write_profile
+
+    imported = scrape_profile(browser_page, f"{site_url}/profile.html")
+
+    assert imported["name"] == "Test Performer"
+    assert imported["playing_age"] == {"min": 18, "max": 25}
+    assert imported["gender"] == "Male"
+    assert imported["ethnicity"] == "White British"
+    assert imported["height_cm"] == 180
+    assert imported["base"] == "London"
+    assert imported["accents"] == ["RP", "Cockney"]
+    assert "Guitar" in imported["skills"]
+    assert imported["email"] == "test@example.com"
+    assert len(imported["credits"]) == 2
+
+    # And it lands in a usable profile.yaml without losing hand-entered fields.
+    path = tmp_path / "profile.yaml"
+    path.write_text("phone: '07700 900000'\n")
+    existing = yaml.safe_load(path.read_text())
+    merged, changes = merge_profile(existing, imported)
+    write_profile(path, merged)
+
+    saved = yaml.safe_load(path.read_text())
+    assert saved["phone"] == "07700 900000"
+    assert saved["playing_age"] == {"min": 18, "max": 25}
+    assert changes

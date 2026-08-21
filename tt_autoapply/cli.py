@@ -7,6 +7,8 @@ import sys
 import time
 from datetime import date
 
+import yaml
+
 from . import notify
 from .applier import apply_via_email, apply_via_form, throttle
 from .browser import browser_context, interactive_login, is_logged_in
@@ -16,6 +18,7 @@ from .discover import discover, print_report
 from .llm import LLMUnavailable, assess, combine
 from .matcher import evaluate
 from .models import ApplicationResult, MatchResult, Role
+from .profile_import import merge_profile, missing_fields, scrape_profile, write_profile
 from .scraper import enrich_role, scrape_roles
 from .store import Store
 
@@ -39,6 +42,58 @@ def cmd_discover(args) -> int:
         page = context.new_page()
         report = discover(page, cfg, url=args.url)
     print_report(report)
+    return 0
+
+
+def cmd_import_profile(args) -> int:
+    cfg = _load(args)
+    url = args.url or cfg.get("site.profile_url")
+    if not url:
+        print(
+            "No profile URL. Pass --url with the address of your own Talent Talks\n"
+            "profile page (the one showing your playing age, height and credits),\n"
+            "or set site.profile_url in config.yaml."
+        )
+        return 1
+
+    with browser_context(cfg, headless=not args.headed) as context:
+        page = context.new_page()
+        imported = scrape_profile(page, url)
+
+    if not imported:
+        print(
+            f"Read {url} but found no recognisable profile fields.\n"
+            "If the page needs a login, run: tt-autoapply login\n"
+            "Otherwise run `tt-autoapply discover --url <that page>` and check the dump."
+        )
+        return 1
+
+    path = cfg.resolve_path("profile", "profile.yaml")
+    existing = {}
+    if path.exists():
+        existing = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+
+    merged, changes = merge_profile(existing, imported)
+
+    print(f"\nRead {len(imported)} fields from {url}:")
+    for change in changes:
+        print(f"  {change}")
+    if not changes:
+        print("  (nothing new — your profile already matches)")
+
+    if args.dry_run:
+        print("\nDry run — profile.yaml not written. Drop --dry-run to save.")
+        return 0
+
+    backup = write_profile(path, merged)
+    print(f"\nWrote {path}" + (f" (previous version kept at {backup})" if backup else ""))
+
+    gaps = missing_fields(merged)
+    if gaps:
+        print(
+            "\nStill blank, and the matcher needs these — fill them in by hand:\n  "
+            + ", ".join(gaps)
+        )
     return 0
 
 
@@ -258,6 +313,14 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--url", help="page to inspect (defaults to the auditions listing)")
     p.add_argument("--headed", action="store_true", help="show the browser")
     p.set_defaults(func=cmd_discover)
+
+    p = sub.add_parser(
+        "import-profile", help="build profile.yaml from your own Talent Talks profile"
+    )
+    p.add_argument("--url", help="your profile page (defaults to site.profile_url)")
+    p.add_argument("--headed", action="store_true", help="show the browser")
+    p.add_argument("--dry-run", action="store_true", help="show what it found, write nothing")
+    p.set_defaults(func=cmd_import_profile)
 
     p = sub.add_parser("scan", help="scrape and match roles without applying")
     p.add_argument("--limit", type=int, help="stop after N matches")

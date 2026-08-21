@@ -12,6 +12,9 @@ site:
   # Set this if the site has a dedicated sign-in page; otherwise login opens
   # the auditions page and you navigate yourself.
   login_url: https://www.talenttalks.co.uk/login/
+  # Your own profile page — the one showing your playing age, height and
+  # credits. `tt-autoapply import-profile` reads it to build profile.yaml.
+  # profile_url: https://www.talenttalks.co.uk/profile/your-name/
   pagination:
     mode: none        # none | query
     param: page
