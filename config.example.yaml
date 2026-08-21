@@ -1,0 +1,195 @@
+# tt-autoapply configuration
+#
+# Copy to config.yaml and edit. The selectors below are PLACEHOLDERS — run
+#   tt-autoapply discover
+# and paste the real ones in before you trust a run.
+
+profile: profile.yaml
+
+site:
+  base_url: https://www.talenttalks.co.uk
+  auditions_path: /auditions/
+  # Set this if the site has a dedicated sign-in page; otherwise login opens
+  # the auditions page and you navigate yourself.
+  login_url: https://www.talenttalks.co.uk/login/
+  pagination:
+    mode: none        # none | query
+    param: page
+    max_pages: 3
+  request_delay_seconds: 3      # be polite between page loads
+  timeout_ms: 30000
+
+browser:
+  headless: true
+  storage_state: state/session.json
+  slow_mo_ms: 0
+
+# --- selectors -------------------------------------------------------------
+# Each entry is a list of candidates; the first that matches wins.
+# Append @attr to read an attribute, e.g. "a.title@href".
+selectors:
+  # Something only present when you're signed in. Leave empty to skip the check.
+  logged_in_marker:
+    - "a[href*='logout']"
+    - ".my-account"
+
+  listing_ready:
+    - "main"
+
+  listing_item:
+    - "article.audition"
+    - ".job-listing"
+    - "li.audition-item"
+
+  title:
+    - "h2 a"
+    - "h3 a"
+    - ".title"
+  link:
+    - "h2 a@href"
+    - "a.read-more@href"
+    - "a@href"
+  company:
+    - ".company"
+    - ".production"
+  location:
+    - ".location"
+    - "[class*='location']"
+  pay:
+    - ".pay"
+    - ".fee"
+    - "[class*='salary']"
+  deadline:
+    - ".deadline"
+    - "[class*='closing']"
+  posted:
+    - "time@datetime"
+    - ".posted"
+  summary:
+    - ".excerpt"
+    - "p"
+  tags:
+    - ".tag"
+    - ".category"
+
+  # Selectors used on an individual role's page.
+  detail:
+    description:
+      - ".audition-detail"
+      - ".entry-content"
+      - "article"
+    company:
+      - ".company"
+    location:
+      - ".location"
+    pay:
+      - ".fee"
+    deadline:
+      - ".deadline"
+    tags:
+      - ".tag"
+
+# --- matching --------------------------------------------------------------
+matching:
+  mode: rules          # rules | rules+llm | llm
+  min_score: 0.6
+  llm_model: claude-opus-5
+  llm_effort: low      # low | medium | high — low is plenty for screening
+
+  exclude_nudity: true
+
+  # Skip briefs that specify an ethnicity you don't match. Only triggers when
+  # the brief states it as a character requirement — "open to all ethnicities"
+  # and incidental words ("black comedy") are ignored.
+  ethnicity_filter: true
+
+  exclude_keywords:
+    - unpaid
+    - student film
+    - "no fee"
+
+  require_keywords: []
+
+  pay:
+    paid_only: true
+    # £ floor, compared against the highest figure in the brief. Leave unset
+    # (or comment out) early in your career — a hard floor filters out a lot of
+    # low-budget shorts and student films that are still worth the reel footage.
+    # min_amount: 100
+
+  location:
+    allow_self_tape: true
+    allowed:
+      - london
+      - south east
+      - manchester
+
+  # Bonus points for briefs that look like a good fit for you. Anything you'd
+  # genuinely go out of your way for belongs here.
+  keyword_boosts:
+    commercial: 0.15
+    "tv drama": 0.2
+    "short film": 0.1
+    student: 0.05
+
+# --- applying --------------------------------------------------------------
+application:
+  mode: form                 # form | email | manual
+  require_confirmation: false  # true = prompt before each submission
+  cover_letter_template: templates/cover_letter.j2
+  screenshot_dir: state/screenshots
+
+  form:
+    trigger:
+      - "a.apply-button"
+      - "button:has-text('Apply')"
+    wait_for:
+      - "form.application-form"
+    fields:
+      - selector: ["textarea[name*='message']", "textarea#cover_letter"]
+        value: "{{ cover_letter }}"
+        optional: false
+      - selector: ["input[name*='phone']"]
+        value: "{{ profile.phone }}"
+        optional: true
+    selects: []
+    checkboxes:
+      - "input[type='checkbox'][name*='terms']"
+    uploads:
+      - selector: ["input[type='file'][name*='cv']"]
+        path: ~/casting/cv.pdf
+        optional: true
+    submit:
+      - "button[type='submit']"
+    success:
+      - "text=Application sent"
+      - ".alert-success"
+
+  # Only used when mode: email
+  email:
+    from: ${TT_EMAIL_FROM}
+    subject: "Application: {{ role.title }} - {{ profile.name }}"
+    smtp_host: smtp.gmail.com
+    smtp_port: 587
+    smtp_user: ${TT_EMAIL_FROM}
+    smtp_password: ${TT_EMAIL_PASSWORD}   # an app password, not your login
+    attachments:
+      - ~/casting/cv.pdf
+      - ~/casting/headshot.jpg
+
+# --- limits ----------------------------------------------------------------
+limits:
+  max_applications_per_run: 5
+  max_applications_per_day: 15
+  seconds_between_applications: 45
+
+storage:
+  database: state/applications.db
+
+discover:
+  output_dir: state/discover
+
+notify:
+  console: true
+  # webhook_url: https://hooks.slack.com/services/...
+  # webhook_field: text

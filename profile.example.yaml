@@ -1,0 +1,49 @@
+# Your casting profile. Copy to profile.yaml and fill in the personal details.
+#
+#   cp profile.example.yaml profile.yaml
+#
+# The matcher and the cover-letter writer only ever use what's in this file —
+# nothing is invented — so the more accurate it is, the better the fit
+# decisions and the less generic the applications.
+
+# --- who you are (edit these) ---
+name: Your Name
+email: you@example.com
+phone: "07700 900000"
+base: London              # where you're based, for travel filtering
+
+# --- casting details ---
+age: 21
+gender: male
+ethnicity: White British
+
+# The age bracket you can convincingly play — this is what casting briefs
+# actually specify, not your real age. A 21-year-old usually reads 18-25.
+playing_age:
+  min: 18
+  max: 25
+
+# Other categories you're genuinely castable as. Leave empty if none —
+# claiming range you don't have gets you cut at the first self-tape.
+also_plays: []
+
+height_cm: 180
+hair: Brown
+eyes: Blue
+
+accents:
+  - RP
+  - Standard English
+
+skills:
+  - full clean driving licence
+
+training: ""              # e.g. "BA Acting, Example Drama School (2024)"
+
+credits: []               # e.g. "Lead — 'Short Film', dir. Someone (2025)"
+
+union: ""                 # Equity, or leave blank
+spotlight_pin: ""
+showreel: ""
+
+travel_notes: Anywhere within 2 hours of home; will self-tape for anything further.

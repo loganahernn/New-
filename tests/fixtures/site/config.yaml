@@ -1,0 +1,69 @@
+# Config for the fixture site used by test_end_to_end.py.
+# base_url is overwritten at test time with the local server's address.
+profile: profile.yaml
+
+site:
+  base_url: http://127.0.0.1:0
+  auditions_path: /index.html
+  pagination:
+    mode: none
+  request_delay_seconds: 0
+  timeout_ms: 5000
+
+browser:
+  headless: true
+  storage_state: state/session.json
+
+selectors:
+  logged_in_marker: ["a[href*='logout']"]
+  listing_ready: ["main"]
+  listing_item: ["article.audition"]
+  title: ["h2 a"]
+  link: ["h2 a@href"]
+  company: [".company"]
+  location: [".location"]
+  pay: [".fee"]
+  deadline: [".deadline"]
+  summary: [".excerpt"]
+  detail:
+    description: [".entry-content"]
+    company: [".company"]
+    location: [".location"]
+    pay: [".fee"]
+    deadline: [".deadline"]
+
+matching:
+  mode: rules
+  min_score: 0.6
+  exclude_nudity: true
+  ethnicity_filter: true
+  pay:
+    paid_only: true
+  location:
+    allow_self_tape: true
+    allowed: ["london"]
+  keyword_boosts:
+    commercial: 0.15
+
+application:
+  mode: form
+  screenshot_dir: state/screenshots
+  form:
+    trigger: ["#apply-btn"]
+    wait_for: ["form.application-form"]
+    fields:
+      - selector: ["#cover_letter"]
+        value: "{{ cover_letter }}"
+        optional: false
+      - selector: ["#phone"]
+        value: "{{ profile.phone }}"
+        optional: true
+    checkboxes: ["input[name='terms']"]
+    submit: ["button[type='submit']"]
+    success: ["#confirmation"]
+
+limits:
+  seconds_between_applications: 0
+
+storage:
+  database: state/applications.db

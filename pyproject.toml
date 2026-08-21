@@ -1,0 +1,27 @@
+[project]
+name = "tt-autoapply"
+version = "0.1.0"
+description = "Scan Talent Talks audition listings, match them against your casting profile, and apply to the ones you fit."
+requires-python = ">=3.10"
+dependencies = [
+    "playwright>=1.44",
+    "PyYAML>=6.0",
+    "Jinja2>=3.1",
+]
+
+[project.optional-dependencies]
+llm = ["anthropic>=0.40"]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+tt-autoapply = "tt_autoapply.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["tt_autoapply"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

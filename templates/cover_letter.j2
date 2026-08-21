@@ -1,0 +1,23 @@
+Dear {{ role.company or 'Casting Team' }},
+
+I'd like to be considered for {{ role.title }}{% if role.location %} in {{ role.location }}{% endif %}.
+
+I'm {{ profile.name }}, a {{ profile.base }}-based {{ profile.gender }} performer with a playing
+age of {{ profile.playing_age.min }}-{{ profile.playing_age.max }}.
+{%- if profile.accents %} Accents: {{ profile.accents | join(', ') }}.{% endif %}
+{%- if profile.skills %} Skills: {{ profile.skills | join(', ') }}.{% endif %}
+
+{% if profile.credits -%}
+Recent credits:
+{% for credit in profile.credits[:3] %}  - {{ credit }}
+{% endfor %}
+{%- endif %}
+{% if profile.showreel %}Showreel: {{ profile.showreel }}{% endif %}
+{%- if profile.spotlight_pin %}
+Spotlight: {{ profile.spotlight_pin }}{% endif %}
+
+I'm available for the dates listed and happy to self-tape.
+
+Best,
+{{ profile.name }}
+{{ profile.email }}{% if profile.phone %} | {{ profile.phone }}{% endif %}

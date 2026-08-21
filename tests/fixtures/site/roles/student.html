@@ -1,0 +1,23 @@
+<!doctype html>
+<html><head><title>Unpaid Student Short</title></head><body>
+<nav><a href="/logout">Log out</a></nav>
+<article class="entry-content">
+  <h1>Unpaid Student Short</h1>
+  <span class="company">Film School</span>
+  <span class="location">London</span>
+  <span class="fee">Unpaid</span>
+  <span class="deadline">Closes 30/12/2099</span>
+  <p>Seeking a male actor, playing age 18-25, for a graduation short.
+     All ethnicities welcome. Unpaid, expenses only. Shooting in London.
+     Self-tape first round.</p>
+</article>
+<button id="apply-btn" onclick="document.getElementById('apply-form').style.display='block'">Apply</button>
+<form class="application-form" id="apply-form" style="display:none" onsubmit="event.preventDefault();document.body.insertAdjacentHTML('beforeend','<div id=confirmation class=alert-success>Application sent</div>');">
+  <label for="cover_letter">Message</label>
+  <textarea id="cover_letter" name="message"></textarea>
+  <label for="phone">Phone</label>
+  <input id="phone" name="phone" type="text">
+  <label><input type="checkbox" name="terms"> I agree to the terms</label>
+  <button type="submit">Send application</button>
+</form>
+</body></html>
