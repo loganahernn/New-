@@ -25,33 +25,36 @@ Two things worth knowing before you point it at your account:
 
 ## Install
 
+**New to the terminal? Read [SETUP.md](SETUP.md) instead** — same thing, spelled
+out click by click.
+
 ```bash
-git clone <this repo> && cd New-
-python3 -m venv .venv && source .venv/bin/activate
-pip install -e .
-playwright install chromium
+bash setup.sh        # macOS / Linux
+.\setup.bat          # Windows
 ```
+
+That creates a private Python environment in this folder, installs the tool and
+its browser, and copies the example config and profile into place. Re-running it
+never overwrites files you've edited.
+
+Every command then starts with `./.venv/bin/tt-autoapply` (Windows:
+`.venv\Scripts\tt-autoapply`) — nothing to activate first.
 
 Optional, for LLM matching of free-text briefs:
 
 ```bash
-pip install -e '.[llm]'
+./.venv/bin/python -m pip install -e '.[llm]'
 export ANTHROPIC_API_KEY=sk-ant-...
 ```
 
 ## Setup
-
-```bash
-cp config.example.yaml config.yaml
-cp profile.example.yaml profile.yaml
-```
 
 Log in once. A real browser opens, you sign in with your existing Talent Talks
 account, and the cookies are saved to `state/session.json`. Your password is
 never handled by the tool:
 
 ```bash
-tt-autoapply login
+./.venv/bin/tt-autoapply login
 ```
 
 ### Import your profile instead of retyping it
@@ -60,8 +63,8 @@ Your playing age, height, accents, skills and credits are already on their site.
 Pull them straight off your own profile page:
 
 ```bash
-tt-autoapply import-profile --url https://www.talenttalks.co.uk/profile/you
-tt-autoapply import-profile --dry-run --url ...   # see what it found first
+./.venv/bin/tt-autoapply import-profile --url https://www.talenttalks.co.uk/profile/you
+./.venv/bin/tt-autoapply import-profile --dry-run --url ...   # see what it found first
 ```
 
 It reads definition lists, two-column tables and `Label: value` lines, maps what
@@ -80,7 +83,7 @@ The selectors shipped in `config.example.yaml` are **placeholders** — I couldn
 reach talenttalks.co.uk to read the real markup. Run this to get the real ones:
 
 ```bash
-tt-autoapply discover
+./.venv/bin/tt-autoapply discover
 ```
 
 It dumps the page HTML and a screenshot to `state/discover/`, then prints the
@@ -90,21 +93,21 @@ Paste the winners into `selectors.listing_item`, `selectors.title`,
 map the application form:
 
 ```bash
-tt-autoapply discover --url https://www.talenttalks.co.uk/auditions/some-role/
+./.venv/bin/tt-autoapply discover --url https://www.talenttalks.co.uk/auditions/some-role/
 ```
 
 If `discover` finds nothing, the listings are probably behind the login —
-run `tt-autoapply login` first, or use `--headed` to watch what happens.
+run `./.venv/bin/tt-autoapply login` first, or use `--headed` to watch what happens.
 
 ## Use
 
 ```bash
-tt-autoapply import-profile  # build profile.yaml from your own profile page
-tt-autoapply scan            # scrape and match, apply to nothing
-tt-autoapply run             # dry run: fills forms, screenshots, submits nothing
-tt-autoapply run --apply     # live: actually submits
-tt-autoapply watch --interval 60 --apply   # check hourly
-tt-autoapply history         # what you've applied to
+./.venv/bin/tt-autoapply import-profile  # build profile.yaml from your own profile page
+./.venv/bin/tt-autoapply scan            # scrape and match, apply to nothing
+./.venv/bin/tt-autoapply run             # dry run: fills forms, screenshots, submits nothing
+./.venv/bin/tt-autoapply run --apply     # live: actually submits
+./.venv/bin/tt-autoapply watch --interval 60 --apply   # check hourly
+./.venv/bin/tt-autoapply history         # what you've applied to
 ```
 
 `scan` is the one to live in while you tune. Each line tells you the verdict and
@@ -154,7 +157,7 @@ everything. Set `require_posted_date: true` to flip that.
 To go for the backlog after all:
 
 ```bash
-tt-autoapply run --include-existing --apply
+./.venv/bin/tt-autoapply run --include-existing --apply
 ```
 
 ## How matching works
@@ -197,7 +200,8 @@ exactly what would have been sent before you go live.
 ## Tests
 
 ```bash
-pip install -e '.[dev]' && pytest
+./.venv/bin/python -m pip install -e '.[dev]'
+./.venv/bin/python -m pytest
 ```
 
 94 tests. The matcher ones cover the filters above, including the cases that
@@ -228,6 +232,9 @@ tt_autoapply/
   store.py        SQLite dedupe + history
   notify.py       run summaries, optional webhook
 ```
+
+`SETUP.md` is the click-by-click version of the install steps; `setup.sh` /
+`setup.bat` do them for you.
 
 `config.yaml`, `profile.yaml` and `state/` are gitignored — they hold your
 personal details and your live session cookies. Keep it that way.
