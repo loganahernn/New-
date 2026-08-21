@@ -26,6 +26,9 @@ browser:
   headless: true
   storage_state: state/session.json
   slow_mo_ms: 0
+  # Point at a specific Chrome/Chromium if Playwright's own download isn't the
+  # browser you want to drive. Leave unset for the normal case.
+  # executable_path: /usr/bin/google-chrome
 
 # --- selectors -------------------------------------------------------------
 # Each entry is a list of candidates; the first that matches wins.
@@ -65,9 +68,13 @@ selectors:
   deadline:
     - ".deadline"
     - "[class*='closing']"
+  # Important for the freshness filter — this is how the tool tells a new post
+  # from an old one. Check `discover` output for what the board actually uses.
   posted:
     - "time@datetime"
     - ".posted"
+    - "[class*='date']"
+    - "[class*='ago']"
   summary:
     - ".excerpt"
     - "p"
@@ -89,6 +96,9 @@ selectors:
       - ".fee"
     deadline:
       - ".deadline"
+    posted:
+      - "time@datetime"
+      - ".posted"
     tags:
       - ".tag"
 
@@ -96,6 +106,16 @@ selectors:
 matching:
   mode: rules          # rules | rules+llm | llm
   min_score: 0.6
+
+  # Only go for recent posts. Casting closes fast and a late application to a
+  # three-week-old brief is wasted. Uses the date the site shows; where there
+  # isn't one, it falls back to when this tool first saw the listing.
+  # Set to 0 to turn the freshness filter off entirely.
+  max_age_days: 14
+
+  # true = skip any listing with no readable posted date at all. Only worth
+  # setting if the board reliably shows dates; otherwise it blocks everything.
+  require_posted_date: false
   llm_model: claude-opus-5
   llm_effort: low      # low | medium | high — low is plenty for screening
 
@@ -194,6 +214,11 @@ limits:
   # Kept even when uncapped — this is about not hammering the site with a
   # burst of submissions, not about limiting how many roles you go for.
   seconds_between_applications: 45
+
+# On the very first run, record everything already on the board and apply to
+# none of it, so the tool starts watching from now rather than working through
+# the back catalogue. Override for one run with --include-existing.
+first_run_baseline: true
 
 storage:
   database: state/applications.db

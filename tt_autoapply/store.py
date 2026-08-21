@@ -38,6 +38,14 @@ CREATE TABLE IF NOT EXISTS matches (
     PRIMARY KEY (role_id, source)
 );
 
+-- Listings that were already on the board when the tool first ran. Recorded
+-- so they are never applied to: "first seen today" would otherwise make the
+-- whole back catalogue look brand new on the very next run.
+CREATE TABLE IF NOT EXISTS baseline (
+    role_id     TEXT PRIMARY KEY,
+    recorded_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS applications (
     role_id      TEXT PRIMARY KEY,
     status       TEXT NOT NULL,
@@ -93,6 +101,36 @@ class Store:
             )
         self.conn.commit()
         return is_new
+
+    def is_empty(self) -> bool:
+        """True before the first scan — used to take a baseline of the board."""
+        cur = self.conn.execute("SELECT 1 FROM roles LIMIT 1")
+        return cur.fetchone() is None
+
+    def first_seen(self, role_id: str) -> date | None:
+        """The date we first saw this listing, for boards that show no dates."""
+        cur = self.conn.execute("SELECT first_seen FROM roles WHERE id = ?", (role_id,))
+        row = cur.fetchone()
+        if not row or not row["first_seen"]:
+            return None
+        try:
+            return datetime.fromisoformat(row["first_seen"]).date()
+        except ValueError:
+            return None
+
+    def record_baseline(self, role_ids) -> int:
+        """Mark listings as pre-existing, so they're never treated as new."""
+        now = _now()
+        rows = [(rid, now) for rid in role_ids]
+        self.conn.executemany(
+            "INSERT OR IGNORE INTO baseline (role_id, recorded_at) VALUES (?, ?)", rows
+        )
+        self.conn.commit()
+        return len(rows)
+
+    def is_baseline(self, role_id: str) -> bool:
+        cur = self.conn.execute("SELECT 1 FROM baseline WHERE role_id = ?", (role_id,))
+        return cur.fetchone() is not None
 
     def seen_role_ids(self) -> set[str]:
         return {r["id"] for r in self.conn.execute("SELECT id FROM roles")}

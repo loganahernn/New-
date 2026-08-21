@@ -97,10 +97,12 @@ def cmd_import_profile(args) -> int:
     return 0
 
 
-def _match(role: Role, profile: dict, cfg: Config) -> MatchResult:
+def _match(
+    role: Role, profile: dict, cfg: Config, *, first_seen: date | None = None
+) -> MatchResult:
     """Run the configured matching strategy for one role."""
     rules = cfg.get("matching", {}) or {}
-    result = evaluate(role, profile, rules, today=date.today())
+    result = evaluate(role, profile, rules, today=date.today(), first_seen=first_seen)
     mode = str(rules.get("mode", "rules"))
 
     if mode == "rules":
@@ -148,8 +150,15 @@ def _within_limit(count: int, limit) -> bool:
     return limit <= 0 or count < limit
 
 
-def _run_pipeline(cfg: Config, *, do_apply: bool, limit: int | None) -> int:
+def _run_pipeline(
+    cfg: Config, *, do_apply: bool, limit: int | None, include_existing: bool = False
+) -> int:
     profile = cfg.load_profile()
+    if include_existing:
+        # Opt back into the backlog: no baseline skip, no age cut-off.
+        cfg.data.setdefault("matching", {})["max_age_days"] = 0
+        cfg.data["first_run_baseline"] = False
+
     store = Store(cfg.resolve_path("storage.database"))
     template = cfg.resolve_path("application.cover_letter_template", "templates/cover_letter.j2")
 
@@ -172,6 +181,21 @@ def _run_pipeline(cfg: Config, *, do_apply: bool, limit: int | None) -> int:
         roles = scrape_roles(page, cfg)
         print(f"Found {len(roles)} listings at {cfg.listing_url}")
 
+        # First ever run: record what's already on the board and apply to none
+        # of it. Otherwise the first run works through the entire back
+        # catalogue, which is the opposite of watching for new posts.
+        if store.is_empty() and cfg.get("first_run_baseline", True):
+            for role in roles:
+                store.record_role(role)
+            store.record_baseline(role.id for role in roles)
+            print(
+                f"\nFirst run — recorded {len(roles)} existing listings as the baseline "
+                "and applied to none of them.\nFrom here on only new posts are "
+                "considered. To go for these too, run with --include-existing."
+            )
+            store.close()
+            return 0
+
         for role in roles:
             store.record_role(role)
 
@@ -181,6 +205,8 @@ def _run_pipeline(cfg: Config, *, do_apply: bool, limit: int | None) -> int:
             # later edited must not be lost just because we've seen it once.
             if store.has_applied(role.id):
                 continue
+            if store.is_baseline(role.id) and not include_existing:
+                continue  # was already on the board before we started watching
             if skip_rejected and store.was_rejected(role.id):
                 continue
 
@@ -190,7 +216,7 @@ def _run_pipeline(cfg: Config, *, do_apply: bool, limit: int | None) -> int:
                 print(f"  ! could not open {role.url}: {exc}")
             store.record_role(role)
 
-            match = _match(role, profile, cfg)
+            match = _match(role, profile, cfg, first_seen=store.first_seen(role.id))
             store.record_match(match)
             results.append((role, match))
             print(f"  {match.summary()}  {role.title}")
@@ -243,7 +269,12 @@ def _run_pipeline(cfg: Config, *, do_apply: bool, limit: int | None) -> int:
 
 
 def cmd_scan(args) -> int:
-    return _run_pipeline(_load(args), do_apply=False, limit=args.limit)
+    return _run_pipeline(
+        _load(args),
+        do_apply=False,
+        limit=args.limit,
+        include_existing=getattr(args, "include_existing", False),
+    )
 
 
 def cmd_run(args) -> int:
@@ -252,7 +283,12 @@ def cmd_run(args) -> int:
         print("LIVE MODE - applications will be submitted.")
     else:
         print("DRY RUN - nothing will be submitted. Pass --apply to go live.")
-    return _run_pipeline(cfg, do_apply=args.apply, limit=args.limit)
+    return _run_pipeline(
+        cfg,
+        do_apply=args.apply,
+        limit=args.limit,
+        include_existing=getattr(args, "include_existing", False),
+    )
 
 
 def cmd_watch(args) -> int:
@@ -324,11 +360,21 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("scan", help="scrape and match roles without applying")
     p.add_argument("--limit", type=int, help="stop after N matches")
+    p.add_argument(
+        "--include-existing",
+        action="store_true",
+        help="also consider listings already on the board, not just new posts",
+    )
     p.set_defaults(func=cmd_scan)
 
     p = sub.add_parser("run", help="scan, match and apply (dry run unless --apply)")
     p.add_argument("--apply", action="store_true", help="actually submit applications")
     p.add_argument("--limit", type=int, help="max applications this run")
+    p.add_argument(
+        "--include-existing",
+        action="store_true",
+        help="also apply to listings already on the board, not just new posts",
+    )
     p.set_defaults(func=cmd_run)
 
     p = sub.add_parser("watch", help="run on a loop")

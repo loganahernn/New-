@@ -10,7 +10,6 @@ Skipped automatically when Playwright's browser isn't installed.
 from __future__ import annotations
 
 import functools
-import os
 import http.server
 import socket
 import threading
@@ -59,30 +58,11 @@ def site_url():
 
 
 @pytest.fixture(scope="module")
-def browser_page():
+def browser_page(chromium_executable):
     playwright = pytest.importorskip("playwright.sync_api")
     pw = playwright.sync_playwright().start()
-
-    # Try Playwright's own resolution first, then any Chromium already on the
-    # box (CI images often ship one that doesn't match the pinned build).
-    attempts: list[dict] = [{}]
-    for root in (os.environ.get("PLAYWRIGHT_BROWSERS_PATH"), "/opt/pw-browsers"):
-        if not root:
-            continue
-        for found in sorted(Path(root).glob("chromium-*/chrome-linux/chrome")):
-            attempts.append({"executable_path": str(found)})
-
-    browser = None
-    for kwargs in attempts:
-        try:
-            browser = pw.chromium.launch(headless=True, **kwargs)
-            break
-        except Exception:
-            continue
-    if browser is None:
-        pw.stop()
-        pytest.skip("no Chromium available - run: playwright install chromium")
-
+    kwargs = {"executable_path": chromium_executable} if chromium_executable else {}
+    browser = pw.chromium.launch(headless=True, **kwargs)
     context = browser.new_context()
     page = context.new_page()
     try:

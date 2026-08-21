@@ -28,11 +28,18 @@ def browser_context(cfg: Config, *, headless: bool | None = None) -> Iterator[Br
     if headless is None:
         headless = bool(cfg.get("browser.headless", True))
 
+    launch_kwargs: dict = {
+        "headless": headless,
+        "slow_mo": int(cfg.get("browser.slow_mo_ms", 0) or 0),
+    }
+    # Point at a specific Chrome/Chromium when Playwright's own download isn't
+    # the one you want to drive (system Chrome, a CI image's browser).
+    executable = cfg.get("browser.executable_path")
+    if executable:
+        launch_kwargs["executable_path"] = str(Path(str(executable)).expanduser())
+
     with sync_playwright() as pw:
-        browser: Browser = pw.chromium.launch(
-            headless=headless,
-            slow_mo=int(cfg.get("browser.slow_mo_ms", 0) or 0),
-        )
+        browser: Browser = pw.chromium.launch(**launch_kwargs)
         kwargs: dict = {}
         if state_path.exists():
             kwargs["storage_state"] = str(state_path)

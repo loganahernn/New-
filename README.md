@@ -130,6 +130,33 @@ submissions stays regardless; that's about not hammering the site with a burst,
 not about limiting how many roles you go for. To throttle yourself while
 tuning, set `limits.max_applications_per_run` to a number, or pass `--limit`.
 
+## New posts only
+
+Casting closes fast, and a late application to a three-week-old brief is wasted.
+Two things keep the tool pointed at fresh listings:
+
+**The first run takes a baseline.** It records everything already on the board
+and applies to none of it, then tells you so. Without this, run one would work
+through the entire back catalogue. Those listings stay excluded on every later
+run — they're marked, not just dated, because "first seen today" would make the
+whole backlog look brand new an hour later.
+
+**Anything older than `matching.max_age_days` (default 14) is skipped.** It uses
+the date the board shows — `2 days ago`, `Posted yesterday`, `Posted on 12
+August 2026` — and falls back to when this tool first saw the listing, which is
+what makes the filter work on a board that shows no dates at all. Newer posts
+also score slightly higher, so you're early in the pile.
+
+If a listing has no readable date and we've never seen it before, it's treated
+as new rather than skipped — on a dateless board the opposite would filter out
+everything. Set `require_posted_date: true` to flip that.
+
+To go for the backlog after all:
+
+```bash
+tt-autoapply run --include-existing --apply
+```
+
 ## How matching works
 
 **Rules** (default, free, no API key). Hard filters that block outright:
@@ -143,6 +170,7 @@ tuning, set `limits.max_applications_per_run` to a number, or pass `--limit`.
 | Location | Outside your travel list, and not a self-tape |
 | Deadline | Already passed |
 | Keywords | Anything in `exclude_keywords`, or nudity when `exclude_nudity` |
+| Freshness | Posted longer ago than `max_age_days`, or already on the board at baseline |
 
 Anything that survives is scored, and `keyword_boosts` plus matching skills push
 it over `min_score`.
@@ -172,13 +200,15 @@ exactly what would have been sent before you go live.
 pip install -e '.[dev]' && pytest
 ```
 
-69 tests. The matcher ones cover the filters above, including the cases that
+94 tests. The matcher ones cover the filters above, including the cases that
 bite: `"female"` not being read as `"male"`, `"a black comedy"` not being read
 as an ethnicity requirement, dry runs never counting as applications, and a
-seen-but-not-applied role staying eligible on the next run. Four end-to-end
-tests run the full scrape → match → fill → submit chain, and the profile
-import, against a local fake casting site in a real browser (skipped if
-Chromium isn't installed).
+seen-but-not-applied role staying eligible on the next run. Six end-to-end
+tests drive a real browser against a local fake casting site: the full
+scrape → match → fill → submit chain, the profile import, and a
+run-1/run-2/run-3 sequence proving the backlog is left alone and only a
+listing added between runs gets applied to. Skipped if Chromium isn't
+installed.
 
 ## Layout
 

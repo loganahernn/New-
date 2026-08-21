@@ -40,6 +40,7 @@ DEFAULTS: dict[str, Any] = {
     "matching": {
         "mode": "rules",  # rules | llm | rules+llm
         "min_score": 0.6,
+        "max_age_days": 14,  # 0 disables the freshness filter
         "llm_model": "claude-opus-5",
         "llm_effort": "low",
     },
@@ -47,6 +48,8 @@ DEFAULTS: dict[str, Any] = {
         "mode": "form",  # form | email | manual
         "require_confirmation": False,
     },
+    # Record the board as-is on the first run instead of working the backlog.
+    "first_run_baseline": True,
     "storage": {"database": "state/applications.db"},
     "notify": {"console": True},
 }
