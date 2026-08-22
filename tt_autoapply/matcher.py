@@ -26,8 +26,14 @@ _AGE_SINGLE = re.compile(r"(?:playing\s+age|age(?:d)?)\s*[:\-]?\s*(\d{1,2})\b")
 _ETHNICITY_TERMS: dict[str, list[str]] = {
     "white": [r"white", r"caucasian"],
     "black": [r"black", r"afro[- ]?caribbean", r"african"],
-    "south asian": [r"south asian", r"indian", r"pakistani", r"bangladeshi", r"sri lankan"],
-    "east asian": [r"east asian", r"chinese", r"japanese", r"korean", r"vietnamese"],
+    "south asian": [
+        r"south[- ]asian", r"indian", r"pakistani", r"bangladeshi", r"sri lankan",
+        r"asian",  # bare "Asian" in UK casting usually means South Asian
+    ],
+    "east asian": [
+        r"east[- ]asian", r"chinese", r"japanese", r"korean", r"vietnamese",
+        r"thai", r"filipino", r"oriental",
+    ],
     "middle eastern": [r"middle eastern", r"arab", r"persian", r"iranian"],
     "mixed": [r"mixed[- ](?:race|heritage)", r"dual heritage"],
     "latin": [r"hispanic", r"latin[oax]"],
@@ -36,6 +42,14 @@ _ETHNICITY_TERMS: dict[str, list[str]] = {
 # A casting word the ethnicity term has to sit next to, so "black comedy" and
 # "wearing all black" don't get read as a casting requirement.
 _CASTING_NOUN = r"(?:male|female|man|men|woman|women|actor|actress|performer|boy|girl|character|lead|guy|lad)"
+
+# Phrasings that exclude white performers without naming an ethnicity. These
+# are a requirement just as much as "Black male" is.
+_EXCLUDES_WHITE = re.compile(
+    r"\b(bame|b\.a\.m\.e|global majority|people of colou?r|person of colou?r"
+    r"|poc\b|non[- ]white|ethnic minorit(y|ies)|minority ethnic"
+    r"|underrepresented ethnic)\b"
+)
 
 _OPEN_ETHNICITY = re.compile(
     r"\b(all ethnicities|any ethnicity|open to all ethnicities|ethnically diverse"
@@ -192,6 +206,18 @@ def extract_ethnicities(text: str) -> set[str]:
     return found
 
 
+def excludes_white(text: str) -> bool:
+    """True when a brief is explicitly for non-white performers.
+
+    Checked separately from the named-ethnicity list because "BAME" and
+    "global majority" state the requirement without naming an ethnicity.
+    """
+    lowered = (text or "").lower()
+    if _OPEN_ETHNICITY.search(lowered):
+        return False
+    return bool(_EXCLUDES_WHITE.search(lowered))
+
+
 def is_unpaid(text: str) -> bool:
     lowered = text.lower()
     return any(marker in lowered for marker in _UNPAID_MARKERS)
@@ -290,6 +316,37 @@ def _overlaps(a: tuple[int, int], b: tuple[int, int]) -> bool:
     return a[0] <= b[1] and b[0] <= a[1]
 
 
+def age_verdict(
+    role_age: tuple[int, int], profile: dict, rules: dict
+) -> tuple[bool | None, str]:
+    """Does this performer's age fit the brief's stated range?
+
+    Default is `contains_age`: the brief's range must actually contain their
+    age. Overlap is too loose — a 21-year-old "overlaps" a 25-35 brief only at
+    its very edge, and applying there wastes everyone's time.
+
+    `overlap_playing_age` restores the looser behaviour for performers who
+    genuinely play well outside their years.
+    """
+    mode = str(rules.get("age_mode", "contains_age"))
+    lo, hi = role_age
+    age = profile.get("age")
+
+    if mode == "contains_age" and age is not None:
+        if lo <= int(age) <= hi:
+            return True, f"age {int(age)} is inside the brief's {lo}-{hi}"
+        return False, f"brief wants {lo}-{hi}, you are {int(age)}"
+
+    playing = profile.get("playing_age") or {}
+    if playing.get("min") is not None and playing.get("max") is not None:
+        mine = (int(playing["min"]), int(playing["max"]))
+        if _overlaps(role_age, mine):
+            return True, f"playing age {lo}-{hi} overlaps yours {mine[0]}-{mine[1]}"
+        return False, f"brief wants {lo}-{hi}, your playing age is {mine[0]}-{mine[1]}"
+
+    return None, "age not comparable"
+
+
 def role_age_days(
     role: Role, *, today: date | None = None, first_seen: date | None = None
 ) -> int | None:
@@ -341,19 +398,16 @@ def evaluate(
     if rules.get("exclude_nudity", True) and has_nudity(text):
         blockers.append("brief mentions nudity/intimate content")
 
-    # Playing age — the site's AGE field first, prose only as a fallback.
+    # Age — the site's AGE field first, prose only as a fallback.
     fields = role.fields or {}
     role_age = parse_age_field(fields.get("age", "")) or extract_age_range(text)
-    my_age = profile.get("playing_age") or {}
-    if role_age and my_age.get("min") is not None and my_age.get("max") is not None:
-        mine = (int(my_age["min"]), int(my_age["max"]))
-        if _overlaps(role_age, mine):
-            reasons.append(f"playing age {role_age[0]}-{role_age[1]} overlaps yours")
+    if role_age:
+        age_fits, age_reason = age_verdict(role_age, profile, rules)
+        if age_fits is True:
+            reasons.append(age_reason)
             score += 0.15
-        else:
-            blockers.append(
-                f"playing age {role_age[0]}-{role_age[1]} vs yours {mine[0]}-{mine[1]}"
-            )
+        elif age_fits is False:
+            blockers.append(age_reason)
 
     # Gender — same order of preference.
     role_genders = parse_gender_field(fields.get("gender", "")) or extract_genders(text)
@@ -377,7 +431,10 @@ def evaluate(
             or extract_ethnicities(text)
         )
         mine = normalise_ethnicity(str(profile.get("ethnicity", "")))
-        if role_ethnicities and mine:
+
+        if mine == "white" and excludes_white(text):
+            blockers.append("brief is for ethnically diverse performers only")
+        elif role_ethnicities and mine:
             if mine in role_ethnicities:
                 reasons.append(f"casting {'/'.join(sorted(role_ethnicities))}")
                 score += 0.1

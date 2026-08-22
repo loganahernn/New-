@@ -136,9 +136,15 @@ matching:
 
   exclude_nudity: true
 
+  # contains_age = only apply when the brief's age range actually contains
+  # your `age` from profile.yaml. This is the strict, sensible default.
+  # overlap_playing_age = the looser check against your playing_age band.
+  age_mode: contains_age
+
   # Skip briefs that specify an ethnicity you don't match. Only triggers when
   # the brief states it as a character requirement — "open to all ethnicities"
-  # and incidental words ("black comedy") are ignored.
+  # and incidental words ("black comedy") are ignored. Also blocks briefs for
+  # non-white performers only (BAME, global majority, people of colour).
   ethnicity_filter: true
 
   exclude_keywords:

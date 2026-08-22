@@ -13,6 +13,8 @@ phone: "07700 900000"
 base: London              # where you're based, for travel filtering
 
 # --- casting details ---
+# Your real age. The age filter uses this: a brief is only applied to when
+# its stated age range actually contains this number.
 age: 21
 gender: male
 ethnicity: White British
