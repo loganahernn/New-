@@ -71,10 +71,20 @@ def cmd_start(args) -> int:
 
     with browser_context(cfg, headless=not args.headed) as context:
         page = context.new_page()
+        page.goto(cfg.listing_url, wait_until="domcontentloaded")
+        signed_in = is_logged_in(page, cfg)
+        if not signed_in:
+            print(
+                "\n  ! You are NOT signed in - the saved session has expired.\n"
+                "    The scan below still works, but it sees the signed-out\n"
+                "    version of the site. Re-run with --relogin to fix it."
+            )
         path, listing, detail = wizard.run(page=page, cfg=cfg, discover_fn=discover)
 
     print("\n" + "=" * 62)
-    if wizard.find_listing_blocks(listing):
+    if not signed_in:
+        print("  Done, but you were signed out - run: tt-autoapply start --relogin")
+    elif wizard.find_listing_blocks(listing):
         print("  Done.")
     else:
         print("  Done, but nothing listing-shaped was found.")

@@ -53,6 +53,29 @@ def _locate(page: "Page", candidates):
     return None
 
 
+def href_is_rejected(href: str | None, reject: list[str]) -> str | None:
+    """The rejected fragment this href matches, if any."""
+    lowered = (href or "").lower()
+    if not lowered:
+        return None
+    for fragment in reject:
+        if fragment.lower() in lowered:
+            return fragment
+    return None
+
+
+def rejected_href(locator, reject_hrefs) -> str | None:
+    """Check a located control's href against the reject list."""
+    reject = as_list(reject_hrefs)
+    if not reject:
+        return None
+    try:
+        href = locator.get_attribute("href")
+    except Exception:
+        return None
+    return href_is_rejected(href, reject)
+
+
 def _screenshot(page: "Page", cfg: Config, role: Role, label: str) -> Path | None:
     directory = cfg.resolve_path("application.screenshot_dir", "state/screenshots")
     try:
@@ -84,6 +107,17 @@ def apply_via_form(
 
     trigger = _locate(page, form_cfg.get("trigger"))
     if trigger is not None:
+        # Signed out, the site shows the same "APPLY FOR THIS JOB" button but
+        # points it at the login page. Clicking would silently do nothing and
+        # look like a successful run, so stop here instead.
+        rejected = rejected_href(trigger, form_cfg.get("reject_hrefs"))
+        if rejected:
+            return ApplicationResult(
+                role.id,
+                "failed",
+                f"apply button leads to {rejected} - you are signed out."
+                " Run: tt-autoapply login",
+            )
         try:
             trigger.click()
         except Exception as exc:

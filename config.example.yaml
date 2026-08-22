@@ -74,10 +74,11 @@ selectors:
     - ".pay"
     - ".fee"
     - "[class*='salary']"
+  # Real: <p class="job-date">Apply Before 25/08/2026</p>
   deadline:
+    - "p.job-date"
+    - ".job-date"
     - ".deadline"
-    - "[class*='closing']"
-    - "[class*='expiry']"
   posted:
     - "time@datetime"
     - ".posted"
@@ -103,8 +104,9 @@ selectors:
     pay:
       - ".fee"
     deadline:
+      - "p.job-date"
+      - ".job-date"
       - ".deadline"
-      - "[class*='closing']"
     posted:
       - "time@datetime"
       - ".posted"
@@ -199,11 +201,20 @@ application:
 
   form:
     # "APPLY FOR THIS JOB" on the audition page leads to the apply form.
+    # Real: <a class="button-light-blue">APPLY FOR THIS JOB</a>. When signed
+    # out this same button points at member/login/ — see reject_hrefs below.
     trigger:
+      - "a.button-light-blue:has-text('Apply for this job')"
       - "a:has-text('Apply for this job')"
       - "button:has-text('Apply for this job')"
-      - "input[value*='Apply' i]"
-      - "a[href*='apply']"
+
+    # If the apply control leads to any of these, we are not signed in and
+    # clicking would just bounce to a login page. Fail loudly instead.
+    reject_hrefs:
+      - "member/login"
+      - "/login"
+      - "sign-up"
+      - "register"
     wait_for:
       - "form textarea"
       - "textarea"
