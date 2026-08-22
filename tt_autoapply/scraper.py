@@ -10,8 +10,22 @@ from typing import TYPE_CHECKING
 from urllib.parse import urljoin
 
 from .config import Config
+from .labels import extract_pairs, map_pairs
 from .models import Role
 from .selectors import as_list, parse_selector
+
+# Labels the site uses for the facts that decide a match.
+ROLE_FIELD_ALIASES: dict[str, list[str]] = {
+    "location": ["location", "where", "region"],
+    "pay": ["payment", "pay", "fee", "rate", "salary"],
+    "age": ["age", "playing age", "age range"],
+    "gender": ["gender", "sex"],
+    "ethnicity": ["ethnicity", "ethnic appearance", "appearance"],
+    "deadline": ["deadline", "closing date", "closes", "apply by"],
+    "posted": ["posted", "date posted", "published"],
+    "category": ["job category", "category", "job type"],
+    "shoot_date": ["shoot date", "shoot dates", "shooting dates", "dates"],
+}
 
 if TYPE_CHECKING:  # pragma: no cover - import only needed for type checking
     from playwright.sync_api import Locator, Page
@@ -155,12 +169,23 @@ def enrich_role(page: "Page", cfg: Config, role: Role) -> Role:
         except Exception:
             description = role.description
 
+    # The site's own DETAILS panel beats anything parsed out of the prose.
+    role.fields = map_pairs(extract_pairs(page), ROLE_FIELD_ALIASES)
+
     role.description = description or role.description
     role.company = first_match(page, detail.get("company")) or role.company
-    role.location = first_match(page, detail.get("location")) or role.location
-    role.pay = first_match(page, detail.get("pay")) or role.pay
-    role.deadline = first_match(page, detail.get("deadline")) or role.deadline
-    role.posted = first_match(page, detail.get("posted")) or role.posted
+    role.location = (
+        role.fields.get("location") or first_match(page, detail.get("location")) or role.location
+    )
+    role.pay = role.fields.get("pay") or first_match(page, detail.get("pay")) or role.pay
+    role.deadline = (
+        role.fields.get("deadline") or first_match(page, detail.get("deadline")) or role.deadline
+    )
+    role.posted = (
+        role.fields.get("posted") or first_match(page, detail.get("posted")) or role.posted
+    )
+    if role.fields.get("category"):
+        role.tags = sorted(set(role.tags) | {role.fields["category"]})
     extra_tags = all_matches(page, detail.get("tags"))
     if extra_tags:
         role.tags = sorted(set(role.tags) | set(extra_tags))

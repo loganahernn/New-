@@ -16,14 +16,18 @@ def format_summary(
     applications: list[ApplicationResult],
 ) -> str:
     fits = [r for r, m in results if m.fits]
-    applied = [a for a in applications if a.status == "applied"]
+    applied = [a for a in applications if a.status in ("applied", "unconfirmed")]
+    review = [a for a in applications if a.status == "needs_review"]
     dry = [a for a in applications if a.status == "dry_run"]
     failed = [a for a in applications if a.status == "failed"]
 
     lines = [
         f"Scanned {len(roles)} roles - {len(fits)} matched"
-        f" - {len(applied)} applied, {len(dry)} dry-run, {len(failed)} failed"
+        f" - {len(applied)} applied, {len(dry)} dry-run,"
+        f" {len(review)} need you, {len(failed)} failed"
     ]
+    for app in review:
+        lines.append(f"  NEEDS YOU {app.role_id}: {app.detail}")
     for role, match in results:
         if match.fits:
             lines.append(f"  MATCH {match.score:.2f}  {role.title}  {role.url}")

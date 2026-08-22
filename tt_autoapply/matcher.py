@@ -101,6 +101,46 @@ def extract_age_range(text: str) -> tuple[int, int] | None:
     return None
 
 
+def parse_age_field(value: str) -> tuple[int, int] | None:
+    """Parse a labelled AGE value like "35-55", "18 to 25", "35+", "Any"."""
+    text = (value or "").lower().strip()
+    if not text or text in {"any", "all", "n/a"}:
+        return None
+
+    m = re.search(r"(\d{1,2})\s*(?:-|–|—|to)\s*(\d{1,2})", text)
+    if m:
+        lo, hi = int(m.group(1)), int(m.group(2))
+        if lo <= hi <= 99:
+            return lo, hi
+    m = re.search(r"(\d{1,2})\s*\+", text)
+    if m:
+        return int(m.group(1)), 99
+    m = re.search(r"under\s*(\d{1,2})", text)
+    if m:
+        return 0, int(m.group(1))
+    m = re.search(r"\b(\d{1,2})\b", text)
+    if m:
+        return int(m.group(1)), int(m.group(1))
+    return None
+
+
+def parse_gender_field(value: str) -> set[str]:
+    """Parse a labelled GENDER value like "Male", "Male/Female", "Any"."""
+    text = (value or "").lower()
+    if not text.strip():
+        return set()
+    found: set[str] = set()
+    if re.search(r"\b(any|all|both|either)\b", text):
+        found.add("any")
+    if re.search(r"\b(female|woman|women|actress)\b", text):
+        found.add("female")
+    if re.search(r"(?<!fe)\b(male|man|men)\b", text):
+        found.add("male")
+    if re.search(r"\b(non[- ]?binary|nb)\b", text):
+        found.add("non-binary")
+    return found
+
+
 def extract_genders(text: str) -> set[str]:
     """Which genders a brief is casting for. Empty set means unspecified."""
     lowered = text.lower()
@@ -301,8 +341,9 @@ def evaluate(
     if rules.get("exclude_nudity", True) and has_nudity(text):
         blockers.append("brief mentions nudity/intimate content")
 
-    # Playing age
-    role_age = extract_age_range(text)
+    # Playing age — the site's AGE field first, prose only as a fallback.
+    fields = role.fields or {}
+    role_age = parse_age_field(fields.get("age", "")) or extract_age_range(text)
     my_age = profile.get("playing_age") or {}
     if role_age and my_age.get("min") is not None and my_age.get("max") is not None:
         mine = (int(my_age["min"]), int(my_age["max"]))
@@ -314,8 +355,8 @@ def evaluate(
                 f"playing age {role_age[0]}-{role_age[1]} vs yours {mine[0]}-{mine[1]}"
             )
 
-    # Gender
-    role_genders = extract_genders(text)
+    # Gender — same order of preference.
+    role_genders = parse_gender_field(fields.get("gender", "")) or extract_genders(text)
     my_gender = str(profile.get("gender", "")).lower().strip()
     if role_genders and my_gender:
         acceptable = {my_gender, "any"} | {
@@ -331,7 +372,10 @@ def evaluate(
 
     # Ethnicity — only when the brief states it as a character requirement.
     if rules.get("ethnicity_filter", True):
-        role_ethnicities = extract_ethnicities(text)
+        role_ethnicities = (
+            {c for c in [normalise_ethnicity(fields.get("ethnicity", ""))] if c}
+            or extract_ethnicities(text)
+        )
         mine = normalise_ethnicity(str(profile.get("ethnicity", "")))
         if role_ethnicities and mine:
             if mine in role_ethnicities:
@@ -344,11 +388,15 @@ def evaluate(
 
     # Pay
     pay_rules = rules.get("pay", {}) or {}
-    if pay_rules.get("paid_only") and is_unpaid(text):
+    if pay_rules.get("paid_only") and is_unpaid(fields.get("pay", "") or text):
         blockers.append("unpaid / expenses only")
     min_rate = pay_rules.get("min_amount")
     if min_rate is not None:
-        amounts = extract_amounts(role.pay or "") or extract_amounts(role.description)
+        amounts = (
+            extract_amounts(fields.get("pay", ""))
+            or extract_amounts(role.pay or "")
+            or extract_amounts(role.description)
+        )
         if amounts and amounts[0] < float(min_rate):
             blockers.append(f"top fee £{amounts[0]:.0f} below your £{float(min_rate):.0f} floor")
         elif amounts:
@@ -386,7 +434,11 @@ def evaluate(
             score += 0.1 if age <= 2 else 0.05
 
     # Deadline
-    deadline = extract_deadline(role.deadline or "") or extract_deadline(role.description)
+    deadline = (
+        extract_deadline(fields.get("deadline", ""))
+        or extract_deadline(role.deadline or "")
+        or extract_deadline(role.description)
+    )
     if deadline and deadline < today:
         blockers.append(f"deadline passed ({deadline.isoformat()})")
     elif deadline:

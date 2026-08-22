@@ -45,9 +45,21 @@ def test_link_selector_excludes_the_share_links():
     assert css == "a[href^='/audition/']"
 
 
-def test_apply_mode_is_not_live_until_the_form_is_mapped(cfg):
-    """The audition page has no <form> yet, so nothing should try to submit."""
-    assert cfg.get("application.mode") == "manual"
+def test_apply_form_is_mapped_to_the_real_flow(cfg):
+    """Apply is a button leading to a page with one text box and Submit."""
+    assert cfg.get("application.mode") == "form"
+    triggers = " ".join(cfg.get("application.form.trigger"))
+    assert "Apply for this job" in triggers
+    selectors = " ".join(
+        " ".join(f["selector"]) for f in cfg.get("application.form.fields")
+    )
+    assert "textarea" in selectors
+
+
+def test_the_note_is_short_by_default(cfg):
+    """The site sends the full profile already; the box is for extras only."""
+    assert cfg.get("application.note") == "Available"
+    assert cfg.get("application.flag_when_brief_asks") is True
 
 
 def test_profile_example_loads_and_is_complete_enough_to_match(cfg):

@@ -1,17 +1,41 @@
-"""Cover-letter rendering.
+"""What goes in the application text box.
 
-A Jinja2 template gets the role and your profile, so notes reference the actual
-production rather than reading as an obvious mailshot. If the LLM matcher is
-enabled it writes the note instead and this is the fallback.
+Talent Talks sends your whole profile to the casting company automatically, so
+the box is only for extra information. The default note is therefore short —
+a full cover letter restating what's already in the profile just adds noise.
+
+Some briefs do ask for specifics ("state your height", "tell us your
+availability that week"). Those need a real answer, so they're detected and
+flagged rather than answered with a bare "Available".
 """
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from jinja2 import ChainableUndefined, Environment, TemplateError
 
 from .models import Role
+
+DEFAULT_NOTE = "Available"
+
+# Phrasing that means the brief wants something specific written in the box.
+_ASKS_FOR_INFO = [
+    r"please (state|include|send|provide|confirm|specify|tell|let us know|attach)",
+    r"\b(state|include|specify|confirm) your\b",
+    r"\blet us know\b",
+    r"\btell us\b",
+    r"\bwe need to know\b",
+    r"\bin your (application|message|note)\b",
+    r"\bwhen applying,? please\b",
+    r"\bapplicants? (should|must) (state|include|provide|confirm)\b",
+    r"\bplease answer\b",
+    r"\bquestions?:\s",
+    r"\bwhy you\b",
+    r"\bmust be able to (confirm|provide)\b",
+]
+_ASKS_PATTERN = re.compile("|".join(_ASKS_FOR_INFO), re.IGNORECASE)
 
 
 class SilentUndefined(ChainableUndefined):
@@ -25,44 +49,39 @@ class SilentUndefined(ChainableUndefined):
     def __str__(self) -> str:
         return ""
 
-DEFAULT_TEMPLATE = """Dear {{ role.company or 'Casting Team' }},
-
-I'd like to be considered for {{ role.title }}.
-
-I'm {{ profile.name }}, a {{ profile.gender }} performer with a playing age of \
-{{ profile.playing_age.min }}-{{ profile.playing_age.max }}, based in {{ profile.base }}.\
-{% if profile.skills %} Relevant skills: {{ profile.skills | join(', ') }}.{% endif %}
-{% if profile.credits %}
-Recent credits:
-{% for credit in profile.credits[:3] %}  - {{ credit }}
-{% endfor %}{% endif %}
-My Spotlight/showreel links and full CV are attached to my profile.
-
-Thank you for your time,
-{{ profile.name }}
-{{ profile.email }}{% if profile.phone %} | {{ profile.phone }}{% endif %}
-"""
-
 
 def _env() -> Environment:
     return Environment(undefined=SilentUndefined, trim_blocks=False, lstrip_blocks=False)
 
 
-def render(role: Role, profile: dict, template_path: Path | None = None) -> str:
-    """Render the cover letter for a role.
+def brief_asks_for_details(role: Role) -> str | None:
+    """The phrase showing a brief wants specific information, if any.
 
-    Falls back to the built-in template if the configured one is missing or
-    references a field your profile doesn't define — a missing note shouldn't
-    stop an otherwise good application.
+    Returns the matched phrase so the reason can be shown to the user, rather
+    than a bare True that leaves them guessing what was spotted.
     """
-    source = DEFAULT_TEMPLATE
+    match = _ASKS_PATTERN.search(role.description or "")
+    return match.group(0).strip() if match else None
+
+
+def render(
+    role: Role,
+    profile: dict,
+    template_path: Path | None = None,
+    *,
+    note: str = DEFAULT_NOTE,
+) -> str:
+    """Build the note for this role's application box.
+
+    Without a template file this is just the configured note — deliberately.
+    The casting company already receives the full profile.
+    """
     if template_path and Path(template_path).exists():
         source = Path(template_path).read_text(encoding="utf-8")
-
-    context = {"role": role, "profile": profile}
-    try:
-        return _env().from_string(source).render(**context).strip()
-    except TemplateError:
-        if source is DEFAULT_TEMPLATE:
-            raise
-        return _env().from_string(DEFAULT_TEMPLATE).render(**context).strip()
+        context = {"role": role, "profile": profile, "note": note}
+        try:
+            rendered = _env().from_string(source).render(**context).strip()
+        except TemplateError:
+            return note
+        return rendered or note
+    return note

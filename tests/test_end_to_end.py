@@ -118,7 +118,7 @@ def test_dry_run_fills_the_form_but_does_not_submit(browser_page, cfg):
     assert result.status == "dry_run"
 
     # The form is genuinely populated — the submit click is what's withheld.
-    assert PROFILE["name"] in browser_page.locator("#cover_letter").input_value()
+    assert browser_page.locator("#cover_letter").input_value() == "Available"
     assert browser_page.locator("#phone").input_value() == PROFILE["phone"]
     assert browser_page.locator("#confirmation").count() == 0
 

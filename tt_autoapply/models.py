@@ -25,6 +25,9 @@ class Role:
     deadline: str | None = None
     posted: str | None = None
     tags: list[str] = field(default_factory=list)
+    # Labelled values from the site's own DETAILS panel (AGE, GENDER, ...).
+    # Authoritative where present — the text scan is only a fallback.
+    fields: dict = field(default_factory=dict)
     scraped_at: str = field(default_factory=_now)
 
     @property
@@ -47,6 +50,7 @@ class Role:
             self.pay or "",
             self.deadline or "",
             " ".join(self.tags),
+            " ".join(f"{k}: {v}" for k, v in (self.fields or {}).items()),
             self.description,
         ]
         return "\n".join(p for p in parts if p).lower()

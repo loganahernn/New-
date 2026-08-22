@@ -162,10 +162,14 @@ class Store:
 
     # --- applications ---
 
+    # A submission we couldn't confirm may well have gone through, so it counts
+    # here: applying twice to the same role is worse than missing one.
+    APPLIED_STATUSES = ("applied", "unconfirmed")
+
     def has_applied(self, role_id: str) -> bool:
         cur = self.conn.execute(
-            "SELECT 1 FROM applications WHERE role_id = ? AND status = 'applied'",
-            (role_id,),
+            "SELECT 1 FROM applications WHERE role_id = ? AND status IN (?, ?)",
+            (role_id, *self.APPLIED_STATUSES),
         )
         return cur.fetchone() is not None
 
@@ -183,7 +187,7 @@ class Store:
     def applications_since(self, since: datetime) -> int:
         cur = self.conn.execute(
             "SELECT COUNT(*) AS n FROM applications"
-            " WHERE status = 'applied' AND submitted_at >= ?",
+            " WHERE status IN ('applied', 'unconfirmed') AND submitted_at >= ?",
             (since.isoformat(timespec="seconds"),),
         )
         return int(cur.fetchone()["n"])

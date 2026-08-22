@@ -178,11 +178,14 @@ def apply_via_form(
                     )
             except Exception:
                 continue
+        # The click went through; only the confirmation wording is unrecognised.
+        # Recording this as "failed" would retry next run and apply twice, so
+        # it gets its own status that counts as applied for de-duplication.
         shot = _screenshot(page, cfg, role, "unconfirmed")
         return ApplicationResult(
             role.id,
-            "failed",
-            f"submitted but no success marker matched; check {shot}",
+            "unconfirmed",
+            f"submitted, but no success message matched - check {shot}",
             cover_letter=cover_letter,
         )
 

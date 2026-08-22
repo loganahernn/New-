@@ -92,6 +92,45 @@ def find_listing_blocks(report: dict) -> int:
     return len(report.get("repeated_blocks") or [])
 
 
+def import_profile_if_found(cfg: "Config", page: "Page") -> tuple[str | None, list[str]]:
+    """Find the logged-in user's profile page and pull their details in.
+
+    Best-effort: a failure here must not derail setup, since the listing scan
+    is the part that actually matters.
+    """
+    from .profile_import import (
+        find_profile_url,
+        merge_profile,
+        missing_fields,
+        scrape_profile,
+        write_profile,
+    )
+    import yaml
+
+    url = cfg.get("site.profile_url") or find_profile_url(page, cfg.get("site.base_url", ""))
+    if not url:
+        return None, []
+
+    try:
+        imported = scrape_profile(page, url)
+    except Exception:
+        return url, []
+    if not imported:
+        return url, []
+
+    path = cfg.resolve_path("profile", "profile.yaml")
+    existing = {}
+    if path.exists():
+        existing = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    merged, changes = merge_profile(existing, imported)
+    write_profile(path, merged)
+
+    gaps = missing_fields(merged)
+    if gaps:
+        changes = changes + [f"(still blank, fill in by hand: {', '.join(gaps)})"]
+    return url, changes
+
+
 def run(cfg: "Config", *, page: "Page", discover_fn) -> tuple[Path, dict, dict | None]:
     """Scan the listing page, then a role page found within it."""
     print("\nReading the auditions page...")
@@ -112,6 +151,21 @@ def run(cfg: "Config", *, page: "Page", discover_fn) -> tuple[Path, dict, dict |
             print(f"  couldn't open it: {exc}")
     else:
         print("\nNo role link found on the listing page, skipping the form scan.")
+
+    print("\nLooking for your profile page...")
+    try:
+        profile_url, changes = import_profile_if_found(cfg, page)
+    except Exception as exc:
+        profile_url, changes = None, []
+        print(f"  skipped: {exc}")
+    if profile_url and changes:
+        print(f"  read your details from {profile_url}")
+        for change in changes[:12]:
+            print(f"    {change}")
+    elif profile_url:
+        print(f"  found {profile_url} but couldn't read fields from it")
+    else:
+        print("  couldn't find a profile link - fill in profile.yaml by hand")
 
     path = write_summary(cfg, build_summary(listing, detail))
     return path, listing, detail

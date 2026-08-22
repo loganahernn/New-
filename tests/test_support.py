@@ -78,32 +78,30 @@ def test_match_and_history_round_trip(tmp_path):
         assert rows[0]["status"] == "applied"
 
 
-def test_cover_letter_uses_only_profile_facts():
-    profile = {
-        "name": "Test Performer",
-        "email": "test@example.com",
-        "phone": "07700 900000",
-        "base": "London",
-        "gender": "male",
-        "playing_age": {"min": 18, "max": 25},
-        "skills": ["guitar"],
-        "accents": ["RP"],
-        "credits": ["Lead — 'Short', dir. Someone (2025)"],
-        "showreel": "https://example.com/reel",
-        "spotlight_pin": "",
-    }
+def test_note_defaults_to_available():
+    """The site attaches the full profile, so the box only needs a short note."""
     role = Role(url="https://x.test/1", title="Male Lead", company="Acme Casting")
-    letter = render(role, profile)
-    assert "Acme Casting" in letter
-    assert "Male Lead" in letter
-    assert "18-25" in letter
-    assert "test@example.com" in letter
+    assert render(role, {"name": "Test"}) == "Available"
 
 
-def test_cover_letter_survives_a_sparse_profile():
-    profile = {"name": "Test", "email": "t@example.com", "playing_age": {"min": 18, "max": 25}}
-    letter = render(Role(url="https://x.test/1", title="Role"), profile)
-    assert "Test" in letter
+def test_note_is_configurable():
+    role = Role(url="https://x.test/1", title="Role")
+    assert render(role, {}, note="Available - happy to self-tape") == (
+        "Available - happy to self-tape"
+    )
+
+
+def test_a_template_can_still_be_used(tmp_path):
+    template = tmp_path / "note.j2"
+    template.write_text("{{ note }} for {{ role.title }}")
+    role = Role(url="https://x.test/1", title="Male Lead")
+    assert render(role, {}, template) == "Available for Male Lead"
+
+
+def test_a_broken_template_falls_back_to_the_note(tmp_path):
+    template = tmp_path / "note.j2"
+    template.write_text("{% for %}")  # invalid Jinja
+    assert render(Role(url="https://x.test/1", title="Role"), {}, template) == "Available"
 
 
 # --- "apply to everything I fit" semantics ---------------------------------

@@ -13,6 +13,7 @@ from . import notify
 from .applier import apply_via_email, apply_via_form, throttle
 from .browser import browser_context, interactive_login, is_logged_in
 from .config import Config
+from .coverletter import DEFAULT_NOTE, brief_asks_for_details
 from .coverletter import render as render_cover_letter
 from .discover import discover, print_report
 from .llm import LLMUnavailable, assess, combine
@@ -202,7 +203,12 @@ def _run_pipeline(
         cfg.data["first_run_baseline"] = False
 
     store = Store(cfg.resolve_path("storage.database"))
-    template = cfg.resolve_path("application.cover_letter_template", "templates/cover_letter.j2")
+    template_setting = cfg.get("application.cover_letter_template")
+    template = (
+        cfg.resolve_path("application.cover_letter_template") if template_setting else None
+    )
+    note = str(cfg.get("application.note", DEFAULT_NOTE))
+    flag_when_asked = bool(cfg.get("application.flag_when_brief_asks", True))
 
     max_per_run = limit if limit is not None else cfg.get("limits.max_applications_per_run", 0)
     max_per_day = cfg.get("limits.max_applications_per_day", 0)
@@ -274,7 +280,24 @@ def _run_pipeline(
                 print("  - daily application limit reached")
                 continue
 
-            cover_letter = match.cover_letter or render_cover_letter(role, profile, template)
+            cover_letter = match.cover_letter or render_cover_letter(
+                role, profile, template, note=note
+            )
+
+            # A brief asking for specifics deserves a real answer, not
+            # "Available" — hold it back rather than send a useless note.
+            asked = brief_asks_for_details(role) if flag_when_asked else None
+            if asked and not match.cover_letter:
+                result = ApplicationResult(
+                    role.id,
+                    "needs_review",
+                    f'brief asks for specifics ("{asked}") - apply to this one yourself',
+                    cover_letter=cover_letter,
+                )
+                store.record_application(result)
+                applications.append(result)
+                print(f"    -> needs you: {result.detail}")
+                continue
 
             if do_apply and cfg.get("application.require_confirmation", False):
                 answer = input(f"    Apply to {role.title!r}? [y/N] ").strip().lower()

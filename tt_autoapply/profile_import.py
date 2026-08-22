@@ -99,6 +99,54 @@ _LABEL_MAP: dict[str, list[str]] = {
 _LIST_FIELDS = {"accents", "skills"}
 
 
+# Where a logged-in user's own details live. Ordered: the earlier the pattern,
+# the more likely that link is the profile rather than a settings page.
+_PROFILE_HINTS = [
+    "my-profile", "myprofile", "my-account", "myaccount", "my-details",
+    "profile", "account", "dashboard", "my-cv", "portfolio",
+]
+_NOT_PROFILE = ("logout", "signout", "sign-out", "login", "register", "password")
+
+_FIND_ACCOUNT_LINKS = """
+() => [...document.querySelectorAll('a[href]')].map(a => ({
+  text: (a.innerText || '').replace(/\\s+/g, ' ').trim().slice(0, 60),
+  href: a.getAttribute('href') || '',
+})).filter(l => l.href)
+"""
+
+
+def pick_profile_link(links: list[dict], base_url: str) -> str | None:
+    """Choose the logged-in user's own profile page from a page's links.
+
+    Saves the user finding and pasting their profile URL. Scored rather than
+    first-match so "My Profile" beats a generic "Account settings" link.
+    """
+    best: tuple[int, str] | None = None
+    for link in links:
+        href = (link.get("href") or "").strip()
+        text = (link.get("text") or "").lower()
+        if not href:
+            continue
+        haystack = f"{href.lower()} {text}"
+        if any(bad in haystack for bad in _NOT_PROFILE):
+            continue
+        for rank, hint in enumerate(_PROFILE_HINTS):
+            if hint in haystack.replace(" ", "-"):
+                if best is None or rank < best[0]:
+                    best = (rank, urljoin(base_url, href))
+                break
+    return best[1] if best else None
+
+
+def find_profile_url(page: "Page", base_url: str) -> str | None:
+    """Look for the user's own profile link on whatever page is open."""
+    try:
+        links = page.evaluate(_FIND_ACCOUNT_LINKS)
+    except Exception:
+        return None
+    return pick_profile_link(links, base_url)
+
+
 def normalise_label(label: str) -> str:
     return re.sub(r"[^a-z ]", "", (label or "").lower()).strip()
 

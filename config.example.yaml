@@ -172,40 +172,56 @@ matching:
 
 # --- applying --------------------------------------------------------------
 application:
-  # NOTE: a Talent Talks audition page carries no <form>, so the apply step
-  # isn't a form on the page — it's a link or a button that loads one. Until
-  # that's mapped, this stays on `manual`: roles are matched and cover letters
-  # drafted, but nothing is submitted. Re-run `tt-autoapply start` to report
-  # the apply button, then switch this to `form`.
-  mode: manual               # form | email | manual
+  mode: form                 # form | email | manual
   require_confirmation: false  # true = prompt before each submission
-  cover_letter_template: templates/cover_letter.j2
   screenshot_dir: state/screenshots
 
+  # Talent Talks sends your whole profile to the casting company automatically,
+  # so the text box is only for extra information. A full cover letter would
+  # just restate the profile.
+  note: "Available"
+
+  # When a brief asks for something specific ("state your height", "confirm
+  # your availability that week"), a bare "Available" is the wrong answer.
+  # true = don't submit those; list them for you to handle yourself.
+  flag_when_brief_asks: true
+
+  # No cover_letter_template by default: the note above is used as-is. Point
+  # this at a Jinja2 file if you want something per-role. `note`, `role` and
+  # `profile` are available inside it.
+  # cover_letter_template: templates/cover_letter.j2
+
   form:
+    # "APPLY FOR THIS JOB" on the audition page leads to the apply form.
     trigger:
-      - "a.apply-button"
-      - "button:has-text('Apply')"
+      - "a:has-text('Apply for this job')"
+      - "button:has-text('Apply for this job')"
+      - "input[value*='Apply' i]"
+      - "a[href*='apply']"
     wait_for:
-      - "form.application-form"
+      - "form textarea"
+      - "textarea"
     fields:
-      - selector: ["textarea[name*='message']", "textarea#cover_letter"]
+      # The apply page has a single free-text box.
+      - selector: ["form textarea", "textarea"]
         value: "{{ cover_letter }}"
         optional: false
-      - selector: ["input[name*='phone']"]
-        value: "{{ profile.phone }}"
-        optional: true
     selects: []
-    checkboxes:
-      - "input[type='checkbox'][name*='terms']"
-    uploads:
-      - selector: ["input[type='file'][name*='cv']"]
-        path: ~/casting/cv.pdf
-        optional: true
+    checkboxes: []
+    uploads: []
     submit:
+      - "form button:has-text('Submit')"
+      - "input[type='submit']"
       - "button[type='submit']"
+      - "button:has-text('Submit')"
+    # Confirmed wording is unknown until a real submission is seen, so these
+    # are candidates. A submission that matches none is recorded as
+    # "unconfirmed" and never retried — see applier.apply_via_form.
     success:
       - "text=Application sent"
+      - "text=Thank you"
+      - "text=successfully"
+      - "text=has been sent"
       - ".alert-success"
 
   # Only used when mode: email
@@ -216,9 +232,7 @@ application:
     smtp_port: 587
     smtp_user: ${TT_EMAIL_FROM}
     smtp_password: ${TT_EMAIL_PASSWORD}   # an app password, not your login
-    attachments:
-      - ~/casting/cv.pdf
-      - ~/casting/headshot.jpg
+    attachments: []
 
 # --- limits ----------------------------------------------------------------
 limits:
