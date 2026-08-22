@@ -131,6 +131,11 @@ matching:
   # Set to 0 to turn the freshness filter off entirely.
   max_age_days: 14
 
+  # Skip jobs that have already happened. Reads the site's SHOOT DATE field,
+  # then the date in the title ("... on Tuesday 25th August"). A job running
+  # over several days counts as upcoming until its last day has passed.
+  require_future_date: true
+
   # true = skip any listing with no readable posted date at all. Only worth
   # setting if the board reliably shows dates; otherwise it blocks everything.
   require_posted_date: false

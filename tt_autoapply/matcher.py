@@ -304,6 +304,80 @@ def _parse_absolute_date(text: str) -> date | None:
     return None
 
 
+_DAY_MONTH = re.compile(
+    r"\b(\d{1,2})(?:st|nd|rd|th)?\s+"
+    r"(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b",
+    re.IGNORECASE,
+)
+_MONTH_ABBR = {
+    "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
+    "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
+}
+
+
+def parse_day_month(day: int, month: int, today: date) -> date | None:
+    """Add the missing year to a "25th August" style date.
+
+    Listings write shoot dates without a year, so pick the occurrence nearest
+    today. That reads a date a few days back as this year (the job has been
+    and gone) rather than next year, and handles the December/January wrap.
+    """
+    candidates = []
+    for year in (today.year - 1, today.year, today.year + 1):
+        try:
+            candidates.append(date(year, month, day))
+        except ValueError:
+            continue  # e.g. 30 February
+    if not candidates:
+        return None
+    return min(candidates, key=lambda d: abs((d - today).days))
+
+
+def extract_event_dates(text: str, *, today: date | None = None) -> list[date]:
+    """Every "on Tuesday 25th August" / "18/09/2026" date in the text."""
+    today = today or date.today()
+    found: list[date] = []
+
+    for pattern, order in _DATE_PATTERNS:
+        for match in pattern.finditer(text or ""):
+            parts = dict(zip(order, match.groups()))
+            try:
+                found.append(date(int(parts["y"]), int(parts["m"]), int(parts["d"])))
+            except ValueError:
+                continue
+
+    for match in _DAY_MONTH.finditer(text or ""):
+        month = _MONTH_ABBR.get(match.group(2)[:3].lower())
+        if not month:
+            continue
+        parsed = parse_day_month(int(match.group(1)), month, today)
+        if parsed:
+            found.append(parsed)
+
+    return found
+
+
+def job_date(role: Role, *, today: date | None = None) -> date | None:
+    """When the job actually happens, if it can be told.
+
+    Prefers the site's SHOOT DATE field, then dates in the title — listings
+    reliably put the date there ("... on Tuesday 25th August"). The body text
+    is deliberately not scanned: it mentions too many other dates.
+
+    Multi-day jobs ("Fitting Tuesday 25th and Filming Wednesday 26th") return
+    the last day, so a job still part-way through is not treated as over.
+    """
+    today = today or date.today()
+    fields = role.fields or {}
+
+    stated = extract_event_dates(fields.get("shoot_date", ""), today=today)
+    if stated:
+        return max(stated)
+
+    from_title = extract_event_dates(role.title or "", today=today)
+    return max(from_title) if from_title else None
+
+
 def extract_deadline(text: str) -> date | None:
     """When applications close, if the brief states a parseable date."""
     return _parse_absolute_date(text)
@@ -489,6 +563,14 @@ def evaluate(
             reasons.append(f"posted {age}d ago")
             # Newer listings score higher: you want to be early in the pile.
             score += 0.1 if age <= 2 else 0.05
+
+    # The job itself must not have happened yet.
+    if rules.get("require_future_date", True):
+        happens = job_date(role, today=today)
+        if happens and happens < today:
+            blockers.append(f"job was on {happens.isoformat()}, already gone")
+        elif happens:
+            reasons.append(f"job on {happens.isoformat()}")
 
     # Deadline
     deadline = (
