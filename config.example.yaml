@@ -26,9 +26,12 @@ browser:
   headless: true
   storage_state: state/session.json
   slow_mo_ms: 0
-  # Point at a specific Chrome/Chromium if Playwright's own download isn't the
-  # browser you want to drive. Leave unset for the normal case.
-  # executable_path: /usr/bin/google-chrome
+  # Playwright downloads its own Chromium and uses it automatically. If your
+  # OS has no build available (macOS 12 and older), the tool falls back to a
+  # Google Chrome / Edge / Brave you already have — no config needed.
+  # Set these only to force a specific browser:
+  # channel: chrome
+  # executable_path: /Applications/Google Chrome.app/Contents/MacOS/Google Chrome
 
 # --- selectors -------------------------------------------------------------
 # Each entry is a list of candidates; the first that matches wins.

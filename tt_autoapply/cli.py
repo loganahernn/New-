@@ -21,6 +21,7 @@ from .models import ApplicationResult, MatchResult, Role
 from .profile_import import merge_profile, missing_fields, scrape_profile, write_profile
 from .scraper import enrich_role, scrape_roles
 from .store import Store
+from . import wizard
 
 
 def _load(args) -> Config:
@@ -42,6 +43,47 @@ def cmd_discover(args) -> int:
         page = context.new_page()
         report = discover(page, cfg, url=args.url)
     print_report(report)
+    return 0
+
+
+def cmd_start(args) -> int:
+    """Log in, scan both page types, and write one file to send back."""
+    cfg = _load(args)
+    state_path = cfg.resolve_path("browser.storage_state")
+
+    print("=" * 62)
+    print("  tt-autoapply setup")
+    print("=" * 62)
+
+    if state_path.exists() and not args.relogin:
+        print(f"\nUsing the saved login at {state_path}")
+        print("(run with --relogin to sign in again)")
+    else:
+        print("\nStep 1 of 2 - logging in")
+        print("A browser window is about to open. Sign in to Talent Talks as")
+        print("normal, then come back here and press Enter.")
+        input("\nPress Enter to open the browser... ")
+        interactive_login(cfg)
+
+    print("\nStep 2 of 2 - reading the page structure")
+    print("Nothing is applied to and nothing is changed. This only looks.")
+
+    with browser_context(cfg, headless=not args.headed) as context:
+        page = context.new_page()
+        path, listing, detail = wizard.run(page=page, cfg=cfg, discover_fn=discover)
+
+    print("\n" + "=" * 62)
+    if wizard.find_listing_blocks(listing):
+        print("  Done.")
+    else:
+        print("  Done, but nothing listing-shaped was found.")
+        print("  Most likely the login didn't take. Try: --relogin")
+        print(f"  A screenshot of what it saw is in {cfg.resolve_path('discover.output_dir', 'state/discover')}")
+    print("=" * 62)
+    print(f"\nSend this file back to get your config filled in:\n\n  {path}\n")
+    print("It has page structure only - no password, no personal details.")
+    print("In Finder: Go > Go to Folder, paste the path above, then drag the")
+    print("file into the chat.\n")
     return 0
 
 
@@ -344,6 +386,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("login", help="log in once in a visible browser and save the session")
     p.set_defaults(func=cmd_login)
+
+    p = sub.add_parser(
+        "start", help="guided setup: log in, scan the pages, write one file to send back"
+    )
+    p.add_argument("--relogin", action="store_true", help="sign in again even if a session is saved")
+    p.add_argument("--headed", action="store_true", help="show the browser while scanning")
+    p.set_defaults(func=cmd_start)
 
     p = sub.add_parser("discover", help="inspect a page and print selector candidates")
     p.add_argument("--url", help="page to inspect (defaults to the auditions listing)")

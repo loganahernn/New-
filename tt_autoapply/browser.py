@@ -21,6 +21,87 @@ class SessionExpired(RuntimeError):
     """Raised when the saved cookies no longer authenticate us."""
 
 
+class BrowserMissing(RuntimeError):
+    """Playwright has no usable Chromium installed."""
+
+
+# Browsers already on the machine that Playwright can drive. Used when its own
+# Chromium download isn't available — notably on macOS 12, which recent
+# Playwright versions publish no Chromium build for at all.
+SYSTEM_BROWSERS = [
+    # macOS
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "/Applications/Chromium.app/Contents/MacOS/Chromium",
+    "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+    "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+    # Linux
+    "/usr/bin/google-chrome",
+    "/usr/bin/google-chrome-stable",
+    "/usr/bin/chromium",
+    "/usr/bin/chromium-browser",
+    "/usr/bin/microsoft-edge",
+    # Windows
+    r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+    r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+    r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+]
+
+
+def find_system_browser(candidates: list[str] | None = None) -> str | None:
+    """First Chrome-family browser already installed, if any."""
+    for path in candidates if candidates is not None else SYSTEM_BROWSERS:
+        if Path(path).exists():
+            return path
+    return None
+
+
+def launch_attempts(kwargs: dict, system_browser: str | None) -> list[dict]:
+    """Ordered launch options to try, most-preferred first.
+
+    Two separate failure modes to survive:
+
+    * The `chrome-headless-shell` download is missing or lagging behind the
+      main Chromium build, which only breaks *headless* launches —
+      `channel="chromium"` runs the full build headlessly instead.
+    * Playwright ships no Chromium at all for this OS (macOS 12), where the
+      only way forward is a browser the user already has.
+    """
+    if kwargs.get("executable_path"):
+        return [kwargs]  # explicitly configured: respect it, don't second-guess
+
+    attempts = [kwargs]
+    if kwargs.get("headless", True):
+        attempts.append({**kwargs, "channel": "chromium"})
+    attempts.append({**kwargs, "channel": "chrome"})
+    if system_browser:
+        attempts.append({**kwargs, "executable_path": system_browser})
+    return attempts
+
+
+def launch_chromium(pw, **kwargs) -> "Browser":
+    """Launch a Chrome-family browser, falling back through what's available."""
+    system_browser = kwargs.pop("_system_browser", None)
+    if system_browser is None and not kwargs.get("executable_path"):
+        system_browser = find_system_browser()
+
+    last_error: Exception | None = None
+    for attempt in launch_attempts(kwargs, system_browser):
+        try:
+            return pw.chromium.launch(**attempt)
+        except Exception as exc:
+            last_error = exc
+
+    raise BrowserMissing(
+        "Couldn't start a browser.\n\n"
+        "First try installing Playwright's own:\n"
+        "    ./.venv/bin/python -m playwright install chromium\n\n"
+        "If that says your OS isn't supported (macOS 12 and older), install\n"
+        "Google Chrome from https://www.google.com/chrome/ and run again —\n"
+        "the tool will drive that instead.\n\n"
+        f"Original error: {last_error}"
+    ) from last_error
+
+
 @contextlib.contextmanager
 def browser_context(cfg: Config, *, headless: bool | None = None) -> Iterator[BrowserContext]:
     """Yield a browser context, loading saved cookies when they exist."""
@@ -37,9 +118,13 @@ def browser_context(cfg: Config, *, headless: bool | None = None) -> Iterator[Br
     executable = cfg.get("browser.executable_path")
     if executable:
         launch_kwargs["executable_path"] = str(Path(str(executable)).expanduser())
+    # e.g. "chrome" to drive an installed Google Chrome rather than a download.
+    channel = cfg.get("browser.channel")
+    if channel:
+        launch_kwargs["channel"] = str(channel)
 
     with sync_playwright() as pw:
-        browser: Browser = pw.chromium.launch(**launch_kwargs)
+        browser: Browser = launch_chromium(pw, **launch_kwargs)
         kwargs: dict = {}
         if state_path.exists():
             kwargs["storage_state"] = str(state_path)
@@ -70,7 +155,7 @@ def interactive_login(cfg: Config) -> Path:
     state_path.parent.mkdir(parents=True, exist_ok=True)
 
     with sync_playwright() as pw:
-        browser = pw.chromium.launch(headless=False)
+        browser = launch_chromium(pw, headless=False)
         context = browser.new_context()
         page = context.new_page()
         page.goto(login_url, wait_until="domcontentloaded")

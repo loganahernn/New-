@@ -50,8 +50,35 @@ fi
 say "3/4  Installing the browser it drives"
 
 # Playwright needs its own Chromium build; the system browser won't do.
-if ! ./.venv/bin/python -m playwright install chromium; then
-    warn "Chromium install failed. Try again with:  ./.venv/bin/python -m playwright install chromium"
+# chromium-headless-shell is a separate download and is what headless runs use
+# by default — installing only `chromium` leaves headless launches broken.
+./.venv/bin/python -m playwright install chromium chromium-headless-shell || \
+    ./.venv/bin/python -m playwright install chromium || true
+
+# Verify rather than assume: a partial download fails at launch, not install.
+if ./.venv/bin/python -c "
+from playwright.sync_api import sync_playwright
+with sync_playwright() as pw:
+    try:
+        b = pw.chromium.launch(headless=True)
+    except Exception:
+        b = pw.chromium.launch(headless=True, channel='chromium')
+    b.close()
+" 2>/dev/null; then
+    echo "     browser OK"
+else
+    if ./.venv/bin/python -c "
+from tt_autoapply.browser import find_system_browser
+import sys
+sys.exit(0 if find_system_browser() else 1)
+" 2>/dev/null; then
+        echo "     Playwright's own browser is unavailable for this OS —"
+        echo "     will drive the Chrome-family browser you already have."
+    else
+        warn "     No usable browser found."
+        warn "     Install Google Chrome from https://www.google.com/chrome/"
+        warn "     then run this script again."
+    fi
 fi
 
 # --- 4. Your files ---------------------------------------------------------
