@@ -148,9 +148,13 @@ profile instead of typing them:
 ./.venv/bin/tt-autoapply import-profile --url https://www.talenttalks.co.uk/your-profile-page
 ```
 
-Then open `profile.yaml` (double-click it, or any text editor) and fill in
-anything it missed — phone number and how far you'll travel usually need doing
-by hand.
+Then fill in anything it missed without opening a file:
+
+```bash
+./.venv/bin/tt-autoapply set --name "Your Name" --email you@example.com --phone "07700 900000"
+```
+
+Run `set` with no options to see what's filled in and what's still blank.
 
 ---
 

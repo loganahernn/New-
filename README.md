@@ -102,6 +102,7 @@ run `./.venv/bin/tt-autoapply login` first, or use `--headed` to watch what happ
 ## Use
 
 ```bash
+./.venv/bin/tt-autoapply set --name "..." --email ...  # your details, no file editing
 ./.venv/bin/tt-autoapply import-profile  # build profile.yaml from your own profile page
 ./.venv/bin/tt-autoapply scan            # scrape and match, apply to nothing
 ./.venv/bin/tt-autoapply run             # dry run: fills forms, screenshots, submits nothing

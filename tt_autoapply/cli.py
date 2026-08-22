@@ -150,6 +150,58 @@ def cmd_import_profile(args) -> int:
     return 0
 
 
+# Fields worth setting from the command line; the rest are better edited or
+# imported, but these four are what a run needs and what nobody wants to hunt
+# for in a YAML file.
+SETTABLE = ["name", "email", "phone", "base", "age", "gender", "ethnicity"]
+
+
+def cmd_set(args) -> int:
+    """Fill in profile.yaml without opening it."""
+    cfg = _load(args)
+    path = cfg.resolve_path("profile", "profile.yaml")
+
+    existing = {}
+    if path.exists():
+        existing = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+
+    updates = {
+        key: getattr(args, key)
+        for key in SETTABLE
+        if getattr(args, key, None) is not None
+    }
+    if not updates:
+        print("Nothing to set. For example:\n")
+        print('  tt-autoapply set --name "Logan Ahern" --email you@example.com'
+              ' --phone "07700 900000"\n')
+        print("Current profile:")
+        for key in SETTABLE:
+            value = existing.get(key)
+            print(f"  {key:<10} {value if value not in (None, '') else '(not set)'}")
+        return 1
+
+    if "age" in updates:
+        try:
+            updates["age"] = int(updates["age"])
+        except (TypeError, ValueError):
+            print(f"age must be a number, got {updates['age']!r}")
+            return 1
+
+    merged, changes = merge_profile(existing, updates)
+    backup = write_profile(path, merged)
+
+    print(f"Updated {path}" + (f" (previous kept at {backup})" if backup else ""))
+    for change in changes:
+        print(f"  {change}")
+
+    gaps = missing_fields(merged)
+    if gaps:
+        print(f"\nStill not set: {', '.join(gaps)}")
+    else:
+        print("\nProfile complete.")
+    return 0
+
+
 def _match(
     role: Role, profile: dict, cfg: Config, *, first_seen: date | None = None
 ) -> MatchResult:
@@ -446,6 +498,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--headed", action="store_true", help="show the browser")
     p.add_argument("--dry-run", action="store_true", help="show what it found, write nothing")
     p.set_defaults(func=cmd_import_profile)
+
+    p = sub.add_parser("set", help="fill in your profile details without editing a file")
+    for key in SETTABLE:
+        p.add_argument(f"--{key}", help=f"your {key}")
+    p.set_defaults(func=cmd_set)
 
     p = sub.add_parser("scan", help="scrape and match roles without applying")
     p.add_argument("--limit", type=int, help="stop after N matches")
