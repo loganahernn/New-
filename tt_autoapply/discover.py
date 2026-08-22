@@ -78,6 +78,55 @@ _FIND_FORMS = """
 """
 
 
+# A role page may carry no <form> at all — the apply step can be a link to a
+# separate page, or a button that fetches the form in. Report anything that
+# looks like it starts an application so the mechanism is visible.
+_FIND_ACTIONS = """
+() => {
+  const clean = (s) => (s || '').replace(/\\s+/g, ' ').trim();
+  const WANTED = /(apply|submit|register|interest|audition|shortlist|put me|send)/i;
+  const out = [];
+  for (const el of document.querySelectorAll('a, button, input[type=submit], input[type=button]')) {
+    const text = clean(el.innerText || el.value || el.getAttribute('aria-label'));
+    const href = el.getAttribute('href') || '';
+    const classes = el.className || '';
+    if (!WANTED.test(text) && !WANTED.test(href) && !WANTED.test(classes)) continue;
+    out.push({
+      tag: el.tagName.toLowerCase(),
+      text: text.slice(0, 80),
+      href: href.slice(0, 200),
+      id: el.id || null,
+      classes: String(classes).slice(0, 120),
+      onclick: (el.getAttribute('onclick') || '').slice(0, 160),
+    });
+  }
+  return out.slice(0, 40);
+}
+"""
+
+# Dates are what the freshness filter runs on, and boards bury them in
+# unlabelled spans, so report anything date-shaped with its selector.
+_FIND_DATES = """
+() => {
+  const clean = (s) => (s || '').replace(/\\s+/g, ' ').trim();
+  const DATEISH = /(\\d+\\s*(minute|hour|day|week|month)s?\\s+ago|posted|closing|closes|deadline|expires|\\d{1,2}[\\/-]\\d{1,2}[\\/-]\\d{2,4}|\\d{1,2}(st|nd|rd|th)?\\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec))/i;
+  const out = [];
+  for (const el of document.querySelectorAll('time, span, div, p, li, td, small')) {
+    if (el.children.length) continue;
+    const text = clean(el.innerText);
+    if (!text || text.length > 90 || !DATEISH.test(text)) continue;
+    out.push({
+      tag: el.tagName.toLowerCase(),
+      classes: String(el.className || '').slice(0, 90),
+      datetime: el.getAttribute('datetime'),
+      text: text.slice(0, 90),
+    });
+  }
+  return out.slice(0, 25);
+}
+"""
+
+
 def _dump(page: "Page", out_dir: Path, name: str) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / f"{name}.html").write_text(page.content(), encoding="utf-8")
@@ -103,6 +152,8 @@ def discover(page: "Page", cfg: Config, url: str | None = None) -> dict:
         "title": page.title(),
         "repeated_blocks": page.evaluate(_FIND_REPEATS),
         "forms": page.evaluate(_FIND_FORMS),
+        "apply_controls": page.evaluate(_FIND_ACTIONS),
+        "dates": page.evaluate(_FIND_DATES),
         "saved_html": str(out_dir / f"{name}.html"),
     }
     (out_dir / f"{name}-report.json").write_text(
@@ -131,6 +182,30 @@ def print_report(report: dict) -> None:
         print("No repeated link-bearing blocks found.")
         print("The listings may be behind a login, or rendered after a delay.")
         print("Check the saved HTML/screenshot, and try `login` first.")
+
+    actions = report.get("apply_controls") or []
+    if actions:
+        print("\nButtons/links that look like they start an application:")
+        for action in actions:
+            bits = [action["tag"]]
+            if action.get("id"):
+                bits.append(f"id={action['id']}")
+            if action.get("classes"):
+                bits.append(f"class={action['classes']}")
+            print(f"  {' '.join(bits)}")
+            print(f"    text: {action['text']!r}")
+            if action.get("href"):
+                print(f"    href: {action['href']}")
+            if action.get("onclick"):
+                print(f"    onclick: {action['onclick']}")
+
+    dates = report.get("dates") or []
+    if dates:
+        print("\nDate-shaped text (used by the freshness filter):")
+        for d in dates:
+            label = d["tag"] + (f".{d['classes']}" if d.get("classes") else "")
+            stamp = f"  [datetime={d['datetime']}]" if d.get("datetime") else ""
+            print(f"  {label}: {d['text']!r}{stamp}")
 
     forms = report.get("forms") or []
     if forms:

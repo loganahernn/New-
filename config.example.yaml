@@ -34,33 +34,39 @@ browser:
   # executable_path: /Applications/Google Chrome.app/Contents/MacOS/Google Chrome
 
 # --- selectors -------------------------------------------------------------
+# These are the REAL Talent Talks selectors, read from the live site.
 # Each entry is a list of candidates; the first that matches wins.
 # Append @attr to read an attribute, e.g. "a.title@href".
 selectors:
-  # Something only present when you're signed in. Leave empty to skip the check.
+  # The footer shows "LOGOUT MY ACCOUNT" only when signed in.
   logged_in_marker:
     - "a[href*='logout']"
-    - ".my-account"
+    - "a[href*='Logout']"
+    - "text=LOGOUT MY ACCOUNT"
 
   listing_ready:
-    - "main"
+    - "div.white.job.media"
 
+  # 25 of these per page — one per audition.
   listing_item:
-    - "article.audition"
-    - ".job-listing"
-    - "li.audition-item"
+    - "div.white.job.media"
+    - "div.job-content.media-body"
 
   title:
-    - "h2 a"
     - "h3 a"
-    - ".title"
+    - "h3"
+
+  # Only same-site /audition/ links: the cards also carry a Twitter share link,
+  # and a bare "a@href" would grab that instead.
   link:
-    - "h2 a@href"
-    - "a.read-more@href"
-    - "a@href"
+    - "a[href^='/audition/']@href"
+
+  # Talent Talks puts pay and location in the title and body text rather than
+  # in their own elements, so these are best-effort. The matcher reads the full
+  # brief text as well, so nothing is lost when they don't match.
   company:
     - ".company"
-    - ".production"
+    - ".client"
   location:
     - ".location"
     - "[class*='location']"
@@ -71,26 +77,25 @@ selectors:
   deadline:
     - ".deadline"
     - "[class*='closing']"
-  # Important for the freshness filter — this is how the tool tells a new post
-  # from an old one. Check `discover` output for what the board actually uses.
+    - "[class*='expiry']"
   posted:
     - "time@datetime"
     - ".posted"
     - "[class*='date']"
-    - "[class*='ago']"
   summary:
-    - ".excerpt"
+    - "div.job-content.media-body p"
     - "p"
   tags:
     - ".tag"
     - ".category"
 
-  # Selectors used on an individual role's page.
+  # Selectors used on an individual audition's page.
   detail:
     description:
-      - ".audition-detail"
-      - ".entry-content"
+      - "div.job-content"
+      - "div.job"
       - "article"
+      - "#content"
     company:
       - ".company"
     location:
@@ -99,9 +104,11 @@ selectors:
       - ".fee"
     deadline:
       - ".deadline"
+      - "[class*='closing']"
     posted:
       - "time@datetime"
       - ".posted"
+      - "[class*='date']"
     tags:
       - ".tag"
 
@@ -165,7 +172,12 @@ matching:
 
 # --- applying --------------------------------------------------------------
 application:
-  mode: form                 # form | email | manual
+  # NOTE: a Talent Talks audition page carries no <form>, so the apply step
+  # isn't a form on the page — it's a link or a button that loads one. Until
+  # that's mapped, this stays on `manual`: roles are matched and cover letters
+  # drafted, but nothing is submitted. Re-run `tt-autoapply start` to report
+  # the apply button, then switch this to `form`.
+  mode: manual               # form | email | manual
   require_confirmation: false  # true = prompt before each submission
   cover_letter_template: templates/cover_letter.j2
   screenshot_dir: state/screenshots
