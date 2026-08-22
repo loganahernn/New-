@@ -263,6 +263,13 @@ def _run_pipeline(
             # later edited must not be lost just because we've seen it once.
             if store.has_applied(role.id):
                 continue
+            if role.already_applied:
+                # The board itself says so. Record it, so a hand-made
+                # application is never duplicated on a later run either.
+                store.record_application(
+                    ApplicationResult(role.id, "applied", "already applied (per the site)")
+                )
+                continue
             if store.is_baseline(role.id) and not include_existing:
                 continue  # was already on the board before we started watching
             if skip_rejected and store.was_rejected(role.id):

@@ -47,6 +47,12 @@ selectors:
   listing_ready:
     - "div.white.job.media"
 
+  # The board marks cards you've already applied to. Honoured so the tool
+  # never applies twice — including to roles you applied to by hand.
+  already_applied:
+    - "text=Already Applied"
+    - ".already-applied"
+
   # 25 of these per page — one per audition.
   listing_item:
     - "div.white.job.media"
@@ -203,10 +209,12 @@ application:
     # "APPLY FOR THIS JOB" on the audition page leads to the apply form.
     # Real: <a class="button-light-blue">APPLY FOR THIS JOB</a>. When signed
     # out this same button points at member/login/ — see reject_hrefs below.
+    # Signed in this links to /audition/<id>/apply/; signed out it points at
+    # member/login/, which reject_hrefs below catches.
     trigger:
+      - "a.button-light-blue[href*='/apply/']"
       - "a.button-light-blue:has-text('Apply for this job')"
       - "a:has-text('Apply for this job')"
-      - "button:has-text('Apply for this job')"
 
     # If the apply control leads to any of these, we are not signed in and
     # clicking would just bounce to a login page. Fail loudly instead.

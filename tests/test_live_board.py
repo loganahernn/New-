@@ -160,3 +160,38 @@ def test_a_genuine_apply_link_is_allowed(href):
 
 def test_no_reject_list_means_no_check():
     assert href_is_rejected("member/login/", []) is None
+
+
+# --- the site's own "Already Applied" marker -------------------------------
+
+
+def test_already_applied_roles_are_recorded_and_skipped(tmp_path):
+    """The board marks cards you've applied to — including by hand."""
+    from tt_autoapply.models import ApplicationResult
+    from tt_autoapply.store import Store
+
+    role = Role(
+        url="https://www.talenttalks.co.uk/audition/44410/",
+        title="ACTORS ONLY: Gen-Z Types Wanted For A Fast Food Chain Shoot",
+        already_applied=True,
+    )
+    with Store(tmp_path / "t.db") as store:
+        store.record_role(role)
+        assert not store.has_applied(role.id)
+
+        # What the pipeline does on seeing the marker.
+        store.record_application(
+            ApplicationResult(role.id, "applied", "already applied (per the site)")
+        )
+        assert store.has_applied(role.id), "must never be applied to again"
+
+
+def test_roles_without_the_marker_stay_eligible():
+    role = Role(url="https://x.test/1", title="Role")
+    assert role.already_applied is False
+
+
+def test_the_real_apply_url_is_not_mistaken_for_a_login_link():
+    """Signed in the button goes to /audition/44413/apply/ — that must pass."""
+    reject = ["member/login", "/login", "sign-up", "register"]
+    assert href_is_rejected("/audition/44413/apply/", reject) is None

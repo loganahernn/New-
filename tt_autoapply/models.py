@@ -28,6 +28,9 @@ class Role:
     # Labelled values from the site's own DETAILS panel (AGE, GENDER, ...).
     # Authoritative where present — the text scan is only a fallback.
     fields: dict = field(default_factory=dict)
+    # The board says so itself — set from the listing card, not from our own
+    # history, so applications made by hand are recognised too.
+    already_applied: bool = False
     scraped_at: str = field(default_factory=_now)
 
     @property

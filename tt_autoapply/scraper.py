@@ -103,6 +103,7 @@ def scrape_listing_page(page: "Page", cfg: Config, url: str) -> list[Role]:
     for i in range(items.count()):
         card = items.nth(i)
         title = first_match(card, cfg.get("selectors.title")) or ""
+        applied_marker = first_match(card, cfg.get("selectors.already_applied"))
         href = first_match(card, cfg.get("selectors.link")) or ""
         if not title and not href:
             continue
@@ -117,6 +118,7 @@ def scrape_listing_page(page: "Page", cfg: Config, url: str) -> list[Role]:
                 posted=first_match(card, cfg.get("selectors.posted")),
                 description=first_match(card, cfg.get("selectors.summary")) or "",
                 tags=all_matches(card, cfg.get("selectors.tags")),
+                already_applied=bool(applied_marker),
             )
         )
     return roles
